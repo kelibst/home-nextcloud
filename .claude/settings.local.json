@@ -11,7 +11,8 @@
       "Read(//mnt/wsl/**)",
       "Bash(chmod:*)",
       "Bash(./troubleshoot-mobile.sh:*)",
-      "Bash(./auto-setup-mobile.sh:*)"
+      "Bash(./auto-setup-mobile.sh:*)",
+      "Read(//mnt/d/shared_drive/**)"
     ],
     "deny": [],
     "ask": []

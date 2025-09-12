@@ -40,7 +40,7 @@ services:
       - ./data:/var/www/html/data
       - ./custom_apps:/var/www/html/custom_apps
       - ./themes:/var/www/html/themes
-      - /mnt/d/shared_drive:/var/www/html/data/shared_drive
+      - /mnt/d/shared_drive:/var/www/html/data/shared_files
     environment:
       # PostgreSQL Configuration
       - POSTGRES_HOST=nextcloud-db

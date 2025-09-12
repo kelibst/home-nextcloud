@@ -1,6 +1,7 @@
-/database
-.env
 /data/
 /config/config.php
 /custom_apps/
 *.log
+/database/
+.env
+/nextcloud.log
