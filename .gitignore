@@ -1,0 +1,6 @@
+/database
+.env
+/data/
+/config/config.php
+/custom_apps/
+*.log

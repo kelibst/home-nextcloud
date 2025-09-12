@@ -1,0 +1,50 @@
+# /etc/systemd/system/nextcloud-ip-update.service
+# Systemd service to automatically update Nextcloud IPs on WSL startup
+
+[Unit]
+Description=Nextcloud IP Update Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+Group=root
+WorkingDirectory=/home/%i/nextcloud-nas
+ExecStart=/bin/bash -c "
+# Get current IPs
+WINDOWS_IP=$(ip route show | grep default | awk '{print $3}')
+WSL_IP=$(hostname -I | awk '{print $1}')
+
+# Update Nextcloud config if it exists
+if [ -f './config/config.php' ]; then
+    # Backup config
+    cp ./config/config.php ./config/config.php.backup
+
+    # Update trusted domains using sed
+    sed -i '/trusted_domains/,/),/c\
+  '\''trusted_domains'\'' => \
+  array (\
+    '\''localhost'\'',\
+    '\'''\$WSL_IP'\'',\
+    '\'''\$WINDOWS_IP'\'',\
+    '\''host.docker.internal'\'',\
+  ),' ./config/config.php
+
+    echo \"Updated Nextcloud config with IPs: WSL=\$WSL_IP, Windows=\$WINDOWS_IP\"
+fi
+
+# Update environment file
+cat > .env << EOF
+WINDOWS_HOST_IP=\$WINDOWS_IP
+WSL_IP=\$WSL_IP
+NEXTCLOUD_URL=http://\$WINDOWS_IP:8080
+EOF
+
+echo \"IP update completed: WSL=\$WSL_IP, Windows=\$WINDOWS_IP\"
+"
+
+[Install]
+WantedBy=multi-user.target
+

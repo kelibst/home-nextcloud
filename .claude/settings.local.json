@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(netstat:*)",
+      "Bash(ss:*)",
+      "Bash(sudo cp:*)",
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)",
+      "Bash(./start-nextcloud.sh:*)",
+      "Bash(docker exec:*)",
+      "Read(//mnt/wsl/**)",
+      "Bash(chmod:*)",
+      "Bash(./troubleshoot-mobile.sh:*)",
+      "Bash(./auto-setup-mobile.sh:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,86 @@
+# docker-compose.yml - Uses dynamic IP detection
+
+services:
+  nextcloud-db:
+    image: postgres:13-alpine
+    container_name: nextcloud-db
+    restart: unless-stopped
+    volumes:
+      - ./database:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=nextcloudpassword
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nextcloud-network
+
+  redis:
+    image: redis:alpine
+    container_name: nextcloud-redis
+    restart: unless-stopped
+    command: redis-server --requirepass redispassword
+    networks:
+      - nextcloud-network
+
+  nextcloud-app:
+    image: nextcloud:latest
+    container_name: nextcloud-app
+    restart: unless-stopped
+    ports:
+      # Bind to all interfaces for external access
+      - "8090:80"
+    volumes:
+      - ./config:/var/www/html/config
+      - ./data:/var/www/html/data
+      - ./custom_apps:/var/www/html/custom_apps
+      - ./themes:/var/www/html/themes
+      - /mnt/d/shared_drive:/var/www/html/data/shared_drive
+    environment:
+      # PostgreSQL Configuration
+      - POSTGRES_HOST=nextcloud-db
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+      - POSTGRES_PASSWORD=nextcloudpassword
+      
+      # Redis Configuration
+      - REDIS_HOST=redis
+      - REDIS_HOST_PASSWORD=redispassword
+      
+      # Nextcloud Configuration - removed auto-install to fix maintenance:install error
+      # - NEXTCLOUD_ADMIN_USER=admin
+      # - NEXTCLOUD_ADMIN_PASSWORD=adminpassword
+      
+      # Dynamic trusted domains - will be updated by script
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost host.docker.internal
+      
+      # Use host.docker.internal for dynamic Windows IP resolution
+      - OVERWRITEPROTOCOL=http
+      
+      # PHP Configuration
+      - PHP_MEMORY_LIMIT=1G
+      - PHP_UPLOAD_LIMIT=10G
+      - PHP_MAX_FILE_UPLOADS=100
+      
+      # Network optimizations
+      - APACHE_DISABLE_REWRITE_IP=1
+      - TRUSTED_PROXIES=172.0.0.0/8 192.168.0.0/16 10.0.0.0/8 host.docker.internal  192.168.1.98
+      
+      # Force clean installation
+      - NEXTCLOUD_INIT_HTACCESS=true
+      - SQLITE_DATABASE=""
+      
+    depends_on:
+      nextcloud-db:
+        condition: service_healthy
+    networks:
+      - nextcloud-network
+
+networks:
+  nextcloud-network:
+    driver: bridge
