@@ -12,7 +12,11 @@
       "Bash(chmod:*)",
       "Bash(./troubleshoot-mobile.sh:*)",
       "Bash(./auto-setup-mobile.sh:*)",
-      "Read(//mnt/d/shared_drive/**)"
+      "Read(//mnt/d/shared_drive/**)",
+      "Read(//home/Kelib/**)",
+      "Bash(docker compose logs:*)",
+      "Bash(docker compose:*)",
+      "Bash(sudo rm:*)"
     ],
     "deny": [],
     "ask": []

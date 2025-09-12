@@ -5,3 +5,4 @@
 /database/
 .env
 /nextcloud.log
+.env
