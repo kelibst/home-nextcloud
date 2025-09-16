@@ -1,446 +1,638 @@
-# Nextcloud Docker NAS Setup - Complete Guide
+# 🏠 Easy Nextcloud NAS Setup - Complete Home Cloud Solution
 
-A comprehensive guide to setting up Nextcloud as a home NAS solution using Docker with PostgreSQL database, supporting mobile devices (Android/iPhone) and utilizing existing desktop storage.
+Transform your computer into a powerful home NAS (Network Attached Storage) with automatic mobile access, file sharing, and photo backup - all using Docker containers with **zero manual configuration**.
 
-## Overview
+[![Docker](https://img.shields.io/badge/Docker-Required-blue)](https://www.docker.com/)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20WSL2%20%7C%20Linux%20%7C%20macOS-green)]()
+[![License](https://img.shields.io/badge/License-MIT-yellow)]()
 
-This setup provides:
-- **Home NAS functionality** using your existing desktop with 3TB storage
-- **Cross-platform access** from Windows, Linux, Android, and iPhone
-- **PostgreSQL database** for better performance than SQLite
-- **Redis caching** for improved speed
-- **Docker containerization** for easy management and portability
+## 🚀 Quick Start (5 Minutes Setup)
 
-## Prerequisites
+**For Beginners - Just run these commands:**
+
+```bash
+# 1. Download this project
+git clone <repository-url> nextcloud-nas
+cd nextcloud-nas
+
+# 2. Make scripts executable
+chmod +x *.sh
+
+# 3. Start everything automatically
+./start-nextcloud.sh
+```
+
+**That's it!** The script will:
+- ✅ Detect your network automatically
+- ✅ Configure all services (PostgreSQL, Redis, Nextcloud)
+- ✅ Set up mobile device access
+- ✅ Create Windows networking scripts
+- ✅ Show you the exact URLs to use
+
+## 📱 What You Get
+
+- **🌐 Web Access**: Full Nextcloud interface from any browser
+- **📱 Mobile Apps**: Automatic photo backup from iPhone/Android
+- **💾 Shared Storage**: Access your computer's drives from anywhere
+- **👥 Multi-Device**: Sync files between all your devices
+- **🔒 Secure**: PostgreSQL database + Redis caching for performance
+- **🔄 Automatic**: Dynamic IP detection, no manual configuration
+
+## 📋 Table of Contents
+
+1. [Prerequisites](#-prerequisites)
+2. [Installation Methods](#-installation-methods)
+3. [Shared Folder Configuration](#-shared-folder-configuration)
+4. [Mobile Device Setup](#-mobile-device-setup)
+5. [Access Your Files](#-access-your-files)
+6. [Automation Scripts](#-automation-scripts)
+7. [Maintenance](#-maintenance)
+8. [Troubleshooting](#-troubleshooting)
+9. [Advanced Configuration](#-advanced-configuration)
+
+## 🔧 Prerequisites
 
 ### System Requirements
-- **Windows with WSL2 or Linux** (DeepinOS/Ubuntu)
-- **Docker and Docker Compose** installed
-- **3TB+ available storage space**
-- **Local network access** (WiFi/Ethernet)
-- **Android/iPhone devices** for mobile access
+- **OS**: Windows 10/11 with WSL2, Linux (Ubuntu/Debian), or macOS
+- **RAM**: 2GB minimum, 4GB recommended
+- **Storage**: 1GB for containers + your shared storage space
+- **Network**: WiFi or Ethernet connection
 
-### Software Installation
+### Required Software
 
-#### On Windows (WSL2):
+#### Windows (WSL2) - Most Common Setup
+```bash
+# 1. Install Docker Desktop (download from docker.com)
+# 2. Enable WSL2 (Windows Subsystem for Linux)
+# 3. Install Ubuntu from Microsoft Store
+# 4. Open Ubuntu terminal and run:
+sudo apt update && sudo apt install git
+```
+
+#### Linux (Ubuntu/Debian)
+```bash
+# Install Docker and dependencies
+sudo apt update
+sudo apt install docker.io docker-compose git curl
+sudo usermod -aG docker $USER
+# Log out and back in for permissions to take effect
+```
+
+#### macOS
 ```bash
 # Install Docker Desktop from docker.com
-# Ensure WSL2 is enabled and Ubuntu/DeepinOS is installed
+# Install git if needed:
+brew install git
 ```
 
-#### On Linux/DeepinOS:
+## 🛠️ Installation Methods
+
+### Method 1: Automatic Setup (Recommended)
+
+**Use the automated script that handles everything:**
+
 ```bash
-sudo apt update && sudo apt install docker.io docker-compose
-sudo usermod -aG docker $USER
-# Log out and back in
+# Clone and setup
+git clone <repository-url> nextcloud-nas
+cd nextcloud-nas
+chmod +x *.sh
+
+# Start with automatic configuration
+./start-nextcloud.sh
 ```
 
-## Quick Start
+The script will:
+1. Detect your network IPs automatically
+2. Update all configuration files
+3. Start all Docker containers
+4. Configure mobile access
+5. Show you access URLs and login credentials
 
-### 1. Download and Setup
+### Method 2: Manual Setup (Advanced Users)
+
 ```bash
-# Create project directory
+# 1. Create project directory
 mkdir nextcloud-nas && cd nextcloud-nas
 
-# Create required directories
-mkdir -p database config data custom_apps themes
+# 2. Download the docker-compose.yml (see configuration section)
 
-# Download the docker-compose.yml (see Configuration section)
-```
+# 3. Create .env file with your settings
+cp .env.example .env
+# Edit .env with your storage path
 
-### 2. Find Your Network Information
-```bash
-# On Windows - find your actual Windows IP (not WSL IP)
-ipconfig
-
-# Look for "Wireless LAN adapter Wi-Fi" or "Ethernet adapter"
-# Note the IPv4 Address (e.g., 192.168.1.100)
-```
-
-### 3. Update Configuration
-Edit `docker-compose.yml` and replace `YOUR_WINDOWS_HOST_IP` with your actual Windows IP address.
-
-### 4. Start Services
-```bash
+# 4. Start containers
 docker-compose up -d
 ```
 
-### 5. Access Nextcloud
-- **Web Browser**: `http://YOUR_WINDOWS_IP:8080`
-- **Default Login**: Username `admin`, Password `adminpassword`
+## 📁 Shared Folder Configuration
 
-## Configuration
+### Easy Storage Setup
 
-### Docker Compose File
+**The system automatically maps your computer's storage to Nextcloud. Here's how to customize it:**
 
-Create `docker-compose.yml`:
+#### 1. Choose Your Storage Location
+
+**Windows Examples:**
+```bash
+# Map your D: drive
+SHARED_DRIVE_PATH=/mnt/d/shared_drive
+
+# Map specific folder on C: drive  
+SHARED_DRIVE_PATH=/mnt/c/Users/YourName/Documents/NextcloudStorage
+
+# Map external USB drive (E: drive)
+SHARED_DRIVE_PATH=/mnt/e/external_storage
+```
+
+**Linux Examples:**
+```bash
+# Map home folder
+SHARED_DRIVE_PATH=/home/yourusername/nextcloud_storage
+
+# Map mounted external drive
+SHARED_DRIVE_PATH=/media/yourusername/external_drive
+
+# Map dedicated partition
+SHARED_DRIVE_PATH=/mnt/storage
+```
+
+**macOS Examples:**
+```bash
+# Map external volume
+SHARED_DRIVE_PATH=/Volumes/External_Drive
+
+# Map Documents folder
+SHARED_DRIVE_PATH=/Users/yourusername/Documents/NextcloudStorage
+```
+
+#### 2. Update Configuration
+
+**Edit the `.env` file:**
+```bash
+# Open with any text editor
+nano .env
+
+# Update this line with your chosen path:
+SHARED_DRIVE_PATH=/your/storage/path/here
+```
+
+#### 3. Restart to Apply Changes
+```bash
+./start-nextcloud.sh
+```
+
+### How Storage Mapping Works
 
 ```yaml
-version: '3.8'
-
-services:
-  nextcloud-db:
-    image: postgres:13-alpine
-    container_name: nextcloud-db
-    restart: unless-stopped
-    volumes:
-      - ./database:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=nextcloud
-      - POSTGRES_USER=nextcloud
-      - POSTGRES_PASSWORD=nextcloudpassword
-      - PGDATA=/var/lib/postgresql/data/pgdata
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - nextcloud-network
-
-  redis:
-    image: redis:alpine
-    container_name: nextcloud-redis
-    restart: unless-stopped
-    command: redis-server --requirepass redispassword
-    networks:
-      - nextcloud-network
-
-  nextcloud-app:
-    image: nextcloud:latest
-    container_name: nextcloud-app
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    volumes:
-      - ./config:/var/www/html/config
-      - ./data:/var/www/html/data
-      - ./custom_apps:/var/www/html/custom_apps
-      - ./themes:/var/www/html/themes
-      # Map your 3TB drive - adjust path as needed
-      - /mnt/d/shared_drive:/var/www/html/data/shared_drive
-    environment:
-      # PostgreSQL Configuration
-      - POSTGRES_HOST=nextcloud-db
-      - POSTGRES_DB=nextcloud
-      - POSTGRES_USER=nextcloud
-      - POSTGRES_PASSWORD=nextcloudpassword
-      
-      # Redis Configuration
-      - REDIS_HOST=redis
-      - REDIS_HOST_PASSWORD=redispassword
-      
-      # Nextcloud Configuration
-      - NEXTCLOUD_ADMIN_USER=admin
-      - NEXTCLOUD_ADMIN_PASSWORD=adminpassword
-      
-      # IMPORTANT: Replace YOUR_WINDOWS_HOST_IP with your actual IP
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost 172.26.48.1 YOUR_WINDOWS_HOST_IP
-      
-      # Performance Configuration
-      - PHP_MEMORY_LIMIT=1G
-      - PHP_UPLOAD_LIMIT=10G
-      - PHP_MAX_FILE_UPLOADS=100
-      
-      # Network optimizations
-      - APACHE_DISABLE_REWRITE_IP=1
-      - TRUSTED_PROXIES=172.0.0.0/8
-      - OVERWRITEPROTOCOL=http
-      - NEXTCLOUD_INIT_HTACCESS=true
-    depends_on:
-      nextcloud-db:
-        condition: service_healthy
-    networks:
-      - nextcloud-network
-
-networks:
-  nextcloud-network:
-    driver: bridge
+# This line in docker-compose.yml maps your storage:
+- ${SHARED_DRIVE_PATH}:/mnt/external-storage:rw
+#   ^^^^^^^^^^^^^^^^^   ^^^^^^^^^^^^^^^^^^^^
+#   Your computer path   Path inside Nextcloud
 ```
 
-## Key Issues Fixed
-
-### 1. **Database Configuration**
-- **Problem**: Using MySQL variables for PostgreSQL
-- **Solution**: Switched to `POSTGRES_*` environment variables
-- **Benefit**: Proper PostgreSQL integration instead of SQLite fallback
-
-### 2. **Service Dependencies**
-- **Problem**: Nextcloud starting before PostgreSQL was ready
-- **Solution**: Added health check and `condition: service_healthy`
-- **Benefit**: Reliable startup sequence
-
-### 3. **Password Consistency**
-- **Problem**: Mismatched passwords between services
-- **Solution**: Ensured identical passwords across all services
-- **Benefit**: Seamless inter-service communication
-
-### 4. **Auto-Setup Configuration**
-- **Problem**: Manual setup required on each restart
-- **Solution**: Added `NEXTCLOUD_ADMIN_USER` and `NEXTCLOUD_ADMIN_PASSWORD`
-- **Benefit**: Automated initial configuration
-
-### 5. **Mobile Device Access**
-- **Problem**: Android/iPhone apps couldn't connect
-- **Solution**: Proper trusted domains and WSL2 port forwarding
-- **Benefit**: Full mobile device integration
-
-## Mobile Device Setup
-
-### For WSL2 Users (Windows)
-
-#### 1. Configure Port Forwarding
-```powershell
-# Run in PowerShell as Administrator
-# Replace 192.168.1.100 with your actual Windows IP
-netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=8080 connectaddress=172.26.48.1
-```
-
-#### 2. Windows Firewall Rule
-```powershell
-# Run in PowerShell as Administrator
-New-NetFirewallRule -DisplayName "Nextcloud" -Direction Inbound -Protocol TCP -LocalPort 8080 -Action Allow
-```
-
-### Android Setup
-1. **Install**: Download "Nextcloud" from Google Play Store
-2. **Server URL**: `http://YOUR_WINDOWS_IP:8080`
-3. **Credentials**: Username `admin`, Password `adminpassword`
-4. **Features**: Enable auto photo upload, file sync
-
-### iPhone Setup
-1. **Install**: Download "Nextcloud" from App Store
-2. **Server URL**: `http://YOUR_WINDOWS_IP:8080`
-3. **Credentials**: Username `admin`, Password `adminpassword`
-4. **Features**: Configure photo backup and file sync
-
-## Storage Configuration
-
-### Drive Mapping Explanation
-```yaml
-# Your storage mapping
-- /mnt/d/shared_drive:/var/www/html/data/shared_drive
-# ^^^^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# Your Windows D:   Where Nextcloud accesses it
-# drive in WSL2     inside the container
-```
-
-### Path Examples
-- **Windows D: drive**: `/mnt/d/shared_drive`
-- **Windows E: drive**: `/mnt/e/nas_storage`
-- **Linux mount**: `/home/username/3tb_drive`
+**In Nextcloud, your files appear under**: `Files → external-storage`
 
 ### Setting Up Shared Access
+
 1. **Login to Nextcloud** web interface
-2. **Navigate to Files** → `shared_drive` folder
-3. **Right-click folder** → Share → "Share with users on this server"
-4. **Set permissions** for universal access
+2. **Navigate to Files** → `external-storage` folder  
+3. **Right-click folder** → Share → Create share link
+4. **Set permissions**: Download, upload, or edit
+5. **Share the link** with family/friends
 
-## Maintenance Commands
+## 📱 Mobile Device Setup
 
-### Basic Operations
+### Automatic Mobile Configuration
+
+**Run the mobile setup script:**
 ```bash
+./auto-setup-mobile.sh
+```
+
+This creates a PowerShell script that automatically:
+- ✅ Detects your real network IP
+- ✅ Sets up Windows port forwarding
+- ✅ Configures Windows Firewall
+- ✅ Tests connectivity
+- ✅ Shows you the exact mobile URL
+
+### Windows PowerShell Setup (Required for Mobile Access)
+
+**After running the mobile script, execute in Windows PowerShell as Administrator:**
+```powershell
+powershell -ExecutionPolicy Bypass -File setup-mobile-access.ps1
+```
+
+This will show output like:
+```
+✅ Selected network IP: 192.168.1.100
+🔗 Setting up port forwarding...
+🛡️ Configuring Windows Firewall...
+📱 Use this URL on your mobile device: http://192.168.1.100:8090
+```
+
+### Mobile App Installation
+
+#### Android Setup
+1. **Download**: "Nextcloud" from Google Play Store
+2. **Server URL**: Use the URL shown by the PowerShell script
+3. **Login**: Username `admin`, Password `adminpassword`
+4. **Enable**: Auto photo upload, file sync
+
+#### iPhone Setup  
+1. **Download**: "Nextcloud" from App Store
+2. **Server URL**: Use the URL shown by the PowerShell script
+3. **Login**: Username `admin`, Password `adminpassword`
+4. **Configure**: Photo backup and file sync
+
+### Mobile Troubleshooting
+
+**If mobile devices can't connect:**
+```bash
+# Run the troubleshooting script
+./troubleshoot-mobile.sh
+```
+
+## 🌐 Access Your Files
+
+### Web Browser Access
+- **Local**: `http://localhost:8090`
+- **Network**: `http://YOUR_IP:8090` (shown by start script)
+- **Login**: Username `admin`, Password `adminpassword`
+
+### Default File Locations
+- **Your Storage**: Files → `external-storage`
+- **Uploaded Files**: Files → `your_username`
+- **Shared Files**: Files → Shared sections
+
+### URL Examples
+```bash
+# These URLs are automatically detected by the scripts:
+Local:    http://localhost:8090
+Network:  http://192.168.1.100:8090
+Mobile:   http://192.168.1.100:8090
+```
+
+## 🤖 Automation Scripts
+
+### Main Scripts
+
+#### `start-nextcloud.sh` - Primary Setup Script
+```bash
+./start-nextcloud.sh
+```
+- Detects network IPs automatically
+- Updates all configuration files  
+- Starts Docker containers
+- Configures trusted domains
+- Creates Windows networking scripts
+- Shows access URLs and credentials
+
+#### `auto-setup-mobile.sh` - Mobile Device Configuration
+```bash
+./auto-setup-mobile.sh
+```
+- Detects real Windows network IP
+- Creates PowerShell script for Windows networking
+- Updates Nextcloud trusted domains
+- Tests connectivity from different devices
+
+#### `troubleshoot-mobile.sh` - Diagnostic Tool
+```bash
+./troubleshoot-mobile.sh
+```
+- Tests network connectivity
+- Validates container status
+- Checks Windows port forwarding
+- Provides specific fix suggestions
+
+#### `fix-permissions.sh` - File Permission Repair
+```bash
+./fix-permissions.sh
+```
+- Fixes Docker volume permissions
+- Ensures cross-platform compatibility
+- Resolves WSL2 permission issues
+
+### Configuration Files
+
+#### `docker-compose.yml` - Container Configuration
+- **PostgreSQL**: Database backend for performance
+- **Redis**: Caching for speed optimization  
+- **Nextcloud**: Main application server
+- **Automatic**: Health checks and dependencies
+
+#### `.env` - Environment Variables
+```bash
+# Auto-generated by scripts
+WINDOWS_HOST_IP=192.168.1.100
+WSL_IP=172.26.58.22
+NEXTCLOUD_URL=http://192.168.1.100:8090
+SHARED_DRIVE_PATH=/mnt/d/shared_drive
+```
+
+## 🔄 Maintenance
+
+### Daily Operations
+
+#### View Status
+```bash
+# Check if containers are running
+docker-compose ps
+
 # View logs
 docker-compose logs -f nextcloud-app
+```
 
-# Restart services
-docker-compose restart
+#### Start/Stop/Restart
+```bash
+# Start (using automated script)
+./start-nextcloud.sh
 
-# Stop services
+# Stop containers
 docker-compose down
 
-# Update Nextcloud
-docker-compose pull && docker-compose up -d
+# Restart containers
+docker-compose restart
 ```
 
-### Clean Installation
+### Updates and Upgrades
+
+#### Update Nextcloud
 ```bash
-# Complete reset (CAUTION: Deletes all data)
-docker-compose down -v
-rm -rf database config data custom_apps themes
-mkdir -p database config data custom_apps themes
-docker-compose up -d
+# Pull latest versions
+docker-compose pull
+
+# Restart with new versions
+./start-nextcloud.sh
 ```
 
-### Backup Strategy
+#### Backup Your Data
 ```bash
-# Backup user data
+# Backup user files and configuration
 tar -czf nextcloud-backup-$(date +%Y%m%d).tar.gz data config
 
 # Backup database
 docker exec nextcloud-db pg_dump -U nextcloud nextcloud > backup-$(date +%Y%m%d).sql
 ```
 
-## Troubleshooting
+### Network Changes
 
-### Common Issues
-
-#### "Connection Refused" Error
-- **Check**: Database is healthy with `docker-compose logs nextcloud-db`
-- **Solution**: Wait for PostgreSQL health check to pass
-
-#### Mobile App Can't Connect
-- **Check**: Windows IP address hasn't changed
-- **Solution**: Update `NEXTCLOUD_TRUSTED_DOMAINS` and restart
-- **Alternative**: Use `0.0.0.0:8080:80` port binding
-
-#### SQLite Warning
-- **Cause**: Database connection failed, falling back to SQLite
-- **Solution**: Verify PostgreSQL environment variables match
-
-#### Slow Performance
-- **Check**: Available RAM and disk space
-- **Solution**: Increase Docker Desktop memory allocation
-- **Optimization**: Use SSD for database storage
-
-### Network Diagnostics
+**When your IP address changes (new WiFi, etc.):**
 ```bash
-# Test database connection
+# Just run the start script again
+./start-nextcloud.sh
+```
+The script automatically detects new IPs and updates everything.
+
+## 🐛 Troubleshooting
+
+### Common Issues and Solutions
+
+#### 🔴 "Connection Refused" Error
+**Problem**: Can't access Nextcloud web interface
+
+**Solutions**:
+```bash
+# 1. Check if containers are running
+docker-compose ps
+
+# 2. Check container logs
+docker-compose logs nextcloud-app
+
+# 3. Restart containers
+./start-nextcloud.sh
+
+# 4. Check database health
+docker exec nextcloud-db pg_isready -U nextcloud
+```
+
+#### 📱 Mobile App Can't Connect
+**Problem**: Android/iPhone apps show connection errors
+
+**Solutions**:
+```bash
+# 1. Run mobile troubleshooting
+./troubleshoot-mobile.sh
+
+# 2. Check Windows firewall
+# Run in Windows PowerShell as Administrator:
+powershell -ExecutionPolicy Bypass -File setup-mobile-access.ps1
+
+# 3. Verify network connectivity
+ping YOUR_WINDOWS_IP  # from mobile device
+```
+
+#### 🐌 Slow Performance
+**Problem**: Nextcloud is running slowly
+
+**Solutions**:
+```bash
+# 1. Check available resources
+docker stats
+
+# 2. Increase Docker memory (Docker Desktop → Settings → Resources)
+# Recommended: 4GB+ RAM allocation
+
+# 3. Check disk space
+df -h
+
+# 4. Restart Redis cache
+docker-compose restart redis
+```
+
+#### 💾 Storage Not Accessible
+**Problem**: Can't see shared folders in Nextcloud
+
+**Solutions**:
+```bash
+# 1. Check storage path in .env file
+cat .env
+
+# 2. Verify path exists and has correct permissions
+ls -la $SHARED_DRIVE_PATH
+
+# 3. Fix permissions
+./fix-permissions.sh
+
+# 4. Restart containers
+./start-nextcloud.sh
+```
+
+#### 🗄️ Database Connection Issues
+**Problem**: SQLite warnings or database errors
+
+**Solutions**:
+```bash
+# 1. Check PostgreSQL container
+docker exec nextcloud-db pg_isready -U nextcloud
+
+# 2. View database logs
+docker-compose logs nextcloud-db
+
+# 3. Reset database (CAUTION: Loses data)
+docker-compose down -v
+./start-nextcloud.sh
+```
+
+### Diagnostic Commands
+
+```bash
+# Network connectivity test
+./troubleshoot-mobile.sh
+
+# Container health check
+docker-compose ps
+docker-compose logs --tail=50 nextcloud-app
+
+# Database connection test
 docker exec nextcloud-app nc -zv nextcloud-db 5432
 
-# Check container networking
-docker network ls
-docker network inspect nextcloud-nas_nextcloud-network
+# File permissions check
+./fix-permissions.sh
 
-# Verify port accessibility
-netstat -tlnp | grep 8080
+# Complete restart
+docker-compose down && ./start-nextcloud.sh
 ```
 
-## Security Considerations
+## ⚙️ Advanced Configuration
 
-### Production Deployment
-1. **Change default passwords** in docker-compose.yml
-2. **Enable HTTPS** with reverse proxy (nginx/Apache)
-3. **Configure proper firewall rules**
-4. **Regular security updates**: `docker-compose pull`
-5. **Backup encryption** for sensitive data
+### Performance Optimization
 
-### Password Security
+#### Increase Resource Limits
+**Edit `docker-compose.yml`:**
 ```yaml
-# Example of secure passwords
-- POSTGRES_PASSWORD=your_super_strong_db_password_here
-- REDIS_HOST_PASSWORD=your_strong_redis_password_here
-- NEXTCLOUD_ADMIN_PASSWORD=your_secure_admin_password_here
+environment:
+  - PHP_MEMORY_LIMIT=2G      # Increase for large files
+  - PHP_UPLOAD_LIMIT=20G     # Increase for large uploads
+  - PHP_MAX_FILE_UPLOADS=200 # Increase for batch uploads
 ```
 
-## Advanced Configuration
+#### SSD Storage
+**For best performance, use SSD storage for:**
+- Database files (`postgres_data` volume)
+- Nextcloud config (`nextcloud_config` volume)
+- Frequently accessed files
 
-### External Access (Optional)
-For access outside your home network:
-1. **Set up VPN** (recommended) or port forwarding
-2. **Configure HTTPS** with Let's Encrypt
-3. **Use dynamic DNS** service for changing IP addresses
+### Security Hardening
 
-### Additional Apps
-Install through Nextcloud web interface:
-- **Collabora Online**: Document editing
-- **Calendar**: Event management
-- **Contacts**: Contact synchronization
-- **Notes**: Note-taking across devices
+#### Change Default Passwords
+**Edit `docker-compose.yml`:**
+```yaml
+environment:
+  - POSTGRES_PASSWORD=your_secure_db_password_here
+  - REDIS_HOST_PASSWORD=your_secure_redis_password_here  
+  - NEXTCLOUD_ADMIN_PASSWORD=your_secure_admin_password_here
+```
 
-## Success Criteria
+#### Enable HTTPS (Advanced)
+**Add reverse proxy with SSL certificate:**
+```bash
+# Example with nginx-proxy-manager
+# See advanced configuration guides for full setup
+```
 
-✅ **Nextcloud accessible** via web browser at `http://YOUR_IP:8080`  
-✅ **PostgreSQL database** connected (no SQLite warnings)  
-✅ **Redis caching** active for performance  
-✅ **Android app** connects and syncs files  
-✅ **iPhone app** connects and syncs files  
-✅ **Photo backup** working from mobile devices  
-✅ **3TB storage** accessible and functional  
-✅ **File sharing** between devices operational  
+### External Access Setup
 
-## Support
+#### VPN Access (Recommended)
+- Set up WireGuard or OpenVPN on your router
+- Access Nextcloud securely from anywhere
+- No port forwarding to internet required
 
-### Getting Help
-- **Docker logs**: `docker-compose logs -f`
-- **Nextcloud logs**: Check Admin → Logging section
-- **Network issues**: Verify IP addresses and firewall rules
-- **Database issues**: Check PostgreSQL container health
+#### Internet Port Forwarding (Advanced)
+```bash
+# Router configuration needed:
+# Forward port 8090 to your computer's local IP
+# Configure dynamic DNS for changing IP addresses
+# Enable HTTPS for security
+```
 
-### Useful Resources
+### Additional Nextcloud Apps
+
+**Install via Nextcloud web interface (Apps section):**
+- **📅 Calendar**: Event management and CalDAV sync
+- **👥 Contacts**: Address book with CardDAV sync
+- **📝 Notes**: Markdown note-taking
+- **📄 OnlyOffice**: Document editing (Word, Excel, PowerPoint)
+- **📞 Talk**: Video calls and chat
+- **📸 Photos**: Advanced photo management
+- **🔐 Passwords**: Password manager
+
+### Custom Storage Locations
+
+#### Multiple Storage Paths
+**Edit `docker-compose.yml` to add multiple volumes:**
+```yaml
+volumes:
+  - ${SHARED_DRIVE_PATH}:/mnt/primary-storage:rw
+  - /mnt/backup-drive:/mnt/backup-storage:rw
+  - /mnt/media-drive:/mnt/media-storage:rw
+```
+
+#### External Storage Plugin
+**Configure via Nextcloud Admin → External Storage:**
+- Add FTP/SFTP servers
+- Connect to other cloud providers
+- Mount network drives
+
+## 📚 Useful Resources
+
+### Official Documentation
 - [Nextcloud Documentation](https://docs.nextcloud.com/)
 - [Docker Compose Reference](https://docs.docker.com/compose/)
-- [PostgreSQL Docker Image](https://hub.docker.com/_/postgres)
+- [PostgreSQL Docker](https://hub.docker.com/_/postgres)
+
+### Community Support
+- [Nextcloud Community](https://help.nextcloud.com/)
+- [Docker Community Forums](https://forums.docker.com/)
+- [Reddit r/NextCloud](https://reddit.com/r/NextCloud)
+
+### Mobile Apps
+- [Android App](https://play.google.com/store/apps/details?id=com.nextcloud.client)
+- [iPhone App](https://apps.apple.com/app/nextcloud/id1125420102)
+
+## 🎯 Success Checklist
+
+**Your setup is working correctly when:**
+
+- ✅ **Web Access**: Can open `http://YOUR_IP:8090` in browser
+- ✅ **Login Works**: Can login with `admin` / `adminpassword`  
+- ✅ **Database**: No SQLite warnings (using PostgreSQL)
+- ✅ **Mobile Access**: Android/iPhone apps connect successfully
+- ✅ **File Upload**: Can upload and download files via web
+- ✅ **Shared Storage**: Can see `external-storage` folder
+- ✅ **Photo Backup**: Mobile apps can backup photos automatically
+- ✅ **Network Access**: Other devices on WiFi can access
+- ✅ **Performance**: Pages load quickly (Redis caching active)
+
+## 🚨 Important Security Notes
+
+### Before Production Use
+1. **Change all default passwords** in `docker-compose.yml`
+2. **Enable 2FA** in Nextcloud Admin settings  
+3. **Configure HTTPS** if accessing from internet
+4. **Regular backups** of important data
+5. **Keep containers updated** with `docker-compose pull`
+
+### Network Security
+- This setup is designed for **local network use**
+- For internet access, use **VPN** or properly configured **HTTPS**
+- **Never expose** with default passwords to the internet
 
 ---
 
-**Note**: Remember to change default passwords before using in a production environment. This setup provides a robust, scalable NAS solution using your existing hardware.
+## 💡 Quick Command Reference
 
-Complete Solution for Persistent IP Configuration
-Here are 4 automated solutions to eliminate manual IP updates:
-Solution 1: Automated Startup Script (Recommended)
+```bash
+# Essential commands for daily use:
+./start-nextcloud.sh              # Start/restart everything
+./auto-setup-mobile.sh            # Configure mobile access  
+./troubleshoot-mobile.sh          # Fix mobile connection issues
+docker-compose logs -f nextcloud-app  # View logs
+docker-compose down               # Stop all containers
+./fix-permissions.sh              # Fix file permission issues
+```
 
-Make the startup script executable:
+**🎉 Enjoy your personal cloud storage solution!**
 
-bash   chmod +x start-nextcloud.sh
-
-Use this instead of docker-compose up:
-
-bash   ./start-nextcloud.sh
-This script automatically:
-
-✅ Detects current Windows and WSL IPs
-✅ Updates Nextcloud configuration
-✅ Creates Windows PowerShell script for port forwarding
-✅ Starts containers with correct settings
-
-Solution 2: Windows Persistent Networking (One-time setup)
-
-In Windows PowerShell (as Administrator):
-
-powershell   .\setup-windows-networking.ps1
-This creates:
-
-✅ Automatic port forwarding on Windows startup
-✅ Windows Firewall rules
-✅ Scheduled task that runs on boot
-✅ Dynamic WSL IP detection
-
-Solution 3: WSL Systemd Service (Advanced)
-
-Install the systemd service:
-
-bash   sudo cp nextcloud-ip-update.service /etc/systemd/system/
-   sudo systemctl enable nextcloud-ip-update.service
-   sudo systemctl daemon-reload
-This automatically updates IPs when WSL starts.
-Solution 4: Docker Compose with Dynamic Resolution
-The updated docker-compose.yml uses:
-
-✅ host.docker.internal for dynamic Windows IP resolution
-✅ 0.0.0.0:8080:80 for binding to all interfaces
-✅ Broader trusted proxy ranges
-
-Quick Setup Process:
-Step 1: One-time Windows Setup
-powershell# In Windows PowerShell (as Administrator)
-.\setup-windows-networking.ps1
-Step 2: Use Automated Startup
-bash# In WSL Ubuntu - instead of docker-compose up
-./start-nextcloud.sh
-Step 3: Access from Any Device
-
-Your Windows IP will be automatically detected
-Mobile devices use: http://[auto-detected-ip]:8080
-No manual IP updates needed!
-
-Key Benefits:
-
-🔄 Automatic IP Detection: Scripts detect current IPs dynamically
-🚀 Persistent Windows Setup: Port forwarding survives reboots
-📱 Mobile Always Works: No more "connection refused" errors
-⚡ One-Time Setup: Configure once, works forever
-🛠️ Smart Updates: Automatically updates Nextcloud config
-
-What This Solves:
-
-❌ No more manual IP updates after restarts
-❌ No more Android connection failures
-❌ No more WSL2 networking headaches
-✅ Works after Windows reboots
-✅ Works after WSL restarts
-✅ Works when IP changes (WiFi networks)
-
-The startup script + Windows automation combination will make your setup completely maintenance-free for IP changes!RetryClaude does not have the ability to run the code it generates yet.
-
- powershell -ExecutionPolicy Bypass -File setup-port-forward-enhanced.ps1
+*This setup gives you enterprise-grade file storage and sync using just your existing computer hardware.*

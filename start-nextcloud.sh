@@ -56,12 +56,57 @@ echo -e "${YELLOW}📍 Detected IPs:${NC}"
 echo -e "   Windows Host IP: ${GREEN}$WINDOWS_IP${NC}"
 echo -e "   WSL IP: ${GREEN}$WSL_IP${NC}"
 
-# Create or update .env file with dynamic IPs
+# Function to detect shared drive path based on OS
+detect_shared_drive_path() {
+    echo -e "${BLUE}🔍 Detecting external storage path...${NC}" >&2
+
+    # Try different common paths based on OS
+    POSSIBLE_PATHS=(
+        "/mnt/d/shared_drive"     # WSL/Linux mounting Windows D: drive
+        "/mnt/c/shared_drive"     # WSL/Linux mounting Windows C: drive
+        "D:/shared_drive"         # Native Windows path
+        "C:/shared_drive"         # Native Windows path
+        "/Volumes/SharedDrive"    # macOS external drive
+        "./shared_drive"          # Local directory fallback
+    )
+
+    for path in "${POSSIBLE_PATHS[@]}"; do
+        if [ -d "$path" ]; then
+            echo -e "   ✅ Found external storage at: ${GREEN}$path${NC}" >&2
+            echo "$path"
+            return 0
+        fi
+    done
+
+    # If no path found, use the WSL default and warn
+    echo -e "${YELLOW}⚠️  No existing external storage found, using default: /mnt/d/shared_drive${NC}" >&2
+    echo -e "${YELLOW}   Create this directory or update SHARED_DRIVE_PATH in .env${NC}" >&2
+    echo "/mnt/d/shared_drive"
+}
+
+# Detect external storage path
+SHARED_DRIVE_PATH=$(detect_shared_drive_path)
+
+# Validate external storage path
+if [ ! -d "$SHARED_DRIVE_PATH" ]; then
+    echo -e "${YELLOW}⚠️  External storage path does not exist: $SHARED_DRIVE_PATH${NC}"
+    echo -e "${YELLOW}   Creating directory...${NC}"
+    mkdir -p "$SHARED_DRIVE_PATH" 2>/dev/null || {
+        echo -e "${RED}❌ Failed to create external storage directory${NC}"
+        echo -e "${YELLOW}   Please create it manually or update SHARED_DRIVE_PATH in .env${NC}"
+    }
+fi
+
+# Create or update .env file with dynamic IPs and external storage
 cat > .env << EOF
 # Auto-generated IP configuration - $(date)
 WINDOWS_HOST_IP=$WINDOWS_IP
 WSL_IP=$WSL_IP
 NEXTCLOUD_URL=http://$WINDOWS_IP:8090
+
+# External Storage Configuration
+# Path will be auto-detected by start script based on OS
+SHARED_DRIVE_PATH=$SHARED_DRIVE_PATH
 EOF
 
 echo -e "${BLUE}📝 Updated .env file with current IPs${NC}"
@@ -187,6 +232,10 @@ docker-compose up -d
 echo -e "${BLUE}⏳ Waiting for services to start...${NC}"
 sleep 10
 
+# Fix file permissions for cross-platform compatibility
+echo -e "${BLUE}🔧 Fixing file permissions for cross-platform compatibility...${NC}"
+./fix-permissions.sh
+
 # Configure trusted domains via container after startup
 echo -e "${BLUE}🔧 Configuring trusted domains for current IPs...${NC}"
 sleep 5  # Give container a bit more time to fully initialize
@@ -198,6 +247,33 @@ docker exec nextcloud-app php occ config:system:set trusted_domains 2 --value="$
 docker exec nextcloud-app php occ config:system:set trusted_domains 3 --value=host.docker.internal 2>/dev/null || echo "  ℹ️  Docker internal domain set"
 
 echo -e "${GREEN}✅ Trusted domains configured for current session${NC}"
+
+# Configure external storage via occ command
+echo -e "${BLUE}🗂️  Configuring external storage...${NC}"
+
+# Enable external storage app
+docker exec nextcloud-app php occ app:enable files_external 2>/dev/null || echo "  ℹ️  External storage app enabled"
+
+# Wait a moment for the app to be fully loaded
+sleep 2
+
+# Remove any existing external storage with the same mount point
+docker exec nextcloud-app php occ files_external:delete -y 1 2>/dev/null || echo "  ℹ️  Cleaned up existing external storage"
+
+# Add external storage mount
+docker exec nextcloud-app php occ files_external:create \
+    "SharedDrive" \
+    "local" \
+    "null::null" \
+    -c datadir="/mnt/external-storage" \
+    --user admin 2>/dev/null && echo "  ✅ External storage configured" || echo "  ℹ️  External storage already exists"
+
+# Verify external storage configuration
+docker exec nextcloud-app php occ files_external:list 2>/dev/null | grep -q "SharedDrive" && \
+    echo -e "${GREEN}✅ External storage 'SharedDrive' configured successfully${NC}" || \
+    echo -e "${YELLOW}⚠️  External storage configuration needs manual setup${NC}"
+
+echo -e "${GREEN}✅ External storage configuration completed${NC}"
 
 # Check if containers are running
 if docker-compose ps | grep -q "Up"; then

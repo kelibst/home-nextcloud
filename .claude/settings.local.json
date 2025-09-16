@@ -15,7 +15,9 @@
       "Read(//mnt/d/shared_drive/**)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(sudo chown:*)",
+      "Bash(./fix-permissions.sh:*)"
     ],
     "deny": [],
     "ask": []
