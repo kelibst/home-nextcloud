@@ -14,7 +14,8 @@
       "Bash(./auto-setup-mobile.sh:*)",
       "Read(//mnt/d/shared_drive/**)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
