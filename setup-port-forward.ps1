@@ -7,8 +7,8 @@ try {
 } catch {}
 
 # Add new port forwarding
-Write-Host "Adding port forward: 0.0.0.0:8090 -> 172.17.0.1:8090" -ForegroundColor Yellow
-netsh interface portproxy add v4tov4 listenport=8090 listenaddress=0.0.0.0 connectport=8090 connectaddress=172.17.0.1
+Write-Host "Adding port forward: 0.0.0.0:8090 -> 172.26.58.22:8090" -ForegroundColor Yellow
+netsh interface portproxy add v4tov4 listenport=8090 listenaddress=0.0.0.0 connectport=8090 connectaddress=172.26.58.22
 
 # Add firewall rule if it doesn't exist
 Write-Host "Configuring Windows Firewall..." -ForegroundColor Yellow
@@ -24,4 +24,4 @@ Write-Host "Current port forwarding rules:" -ForegroundColor Green
 netsh interface portproxy show v4tov4
 
 Write-Host "✅ Windows networking setup complete!" -ForegroundColor Green
-Write-Host "Access Nextcloud at: http://192.168.77.126:8090" -ForegroundColor Cyan
+Write-Host "Access Nextcloud at: http://192.168.1.98:8090" -ForegroundColor Cyan
