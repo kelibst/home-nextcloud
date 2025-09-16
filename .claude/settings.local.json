@@ -12,7 +12,18 @@
       "Bash(chmod:*)",
       "Bash(./troubleshoot-mobile.sh:*)",
       "Bash(./auto-setup-mobile.sh:*)",
-      "Read(//mnt/d/shared_drive/**)"
+      "Read(//mnt/d/shared_drive/**)",
+      "Read(//home/Kelib/**)",
+      "Bash(docker compose logs:*)",
+      "Bash(docker compose:*)",
+      "Bash(sudo rm:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Read(//media/Kelib/DATA/**)",
+      "Bash(sudo chown:*)",
+      "Bash(sed:*)",
+      "Bash(./manage-ip.sh:*)",
+      "Bash(./scripts/enhanced-ip-detect.sh:*)"
     ],
     "deny": [],
     "ask": []
