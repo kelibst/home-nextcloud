@@ -23,7 +23,9 @@
       "Bash(sudo chown:*)",
       "Bash(sed:*)",
       "Bash(./manage-ip.sh:*)",
-      "Bash(./scripts/enhanced-ip-detect.sh:*)"
+      "Bash(./scripts/enhanced-ip-detect.sh:*)",
+      "Read(//media/Kelib/**)",
+      "WebFetch(domain:docs.nextcloud.com)"
     ],
     "deny": [],
     "ask": []

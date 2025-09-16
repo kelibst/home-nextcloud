@@ -67,7 +67,7 @@ services:
       - ./data:/var/www/html/data
       - ./custom_apps:/var/www/html/custom_apps
       - ./themes:/var/www/html/themes
-      - /media/Kelib/DATA1/shared_drive:/var/www/html/data/shared_files
+      - /media/Kelib/DATA2:/mnt/external_storage:rw
       - ./:/shared:ro
     environment:
       # PostgreSQL Configuration
