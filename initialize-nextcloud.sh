@@ -59,7 +59,7 @@ echo ""
 
 # Stop and remove existing containers completely
 echo -e "${BLUE}🛑 Stopping existing containers...${NC}"
-docker-compose down -v
+docker compose  down -v
 docker system prune -f
 
 # Ensure shared drive path exists
@@ -72,21 +72,21 @@ fi
 
 # Start database first
 echo -e "${BLUE}🗄️ Starting PostgreSQL database...${NC}"
-docker-compose up -d nextcloud-db
+docker compose  up -d nextcloud-db
 
 # Wait for database to be ready
 wait_for_service "nextcloud-db" "5432"
 
 # Start Redis
 echo -e "${BLUE}⚡ Starting Redis cache...${NC}"
-docker-compose up -d redis
+docker compose  up -d redis
 
 # Wait a moment for Redis
 sleep 5
 
 # Start Nextcloud
 echo -e "${BLUE}🌐 Starting Nextcloud application...${NC}"
-docker-compose up -d nextcloud-app
+docker compose  up -d nextcloud-app
 
 # Wait for Nextcloud to be ready
 echo -e "${YELLOW}⏳ Waiting for Nextcloud to initialize (this may take 2-3 minutes)...${NC}"
@@ -104,13 +104,18 @@ done
 echo ""
 
 # Check if Nextcloud is already installed
-INSTALLED=$(run_occ status 2>/dev/null | grep "installed: true" || echo "not installed")
+echo -e "${BLUE}🔍 Checking Nextcloud installation status...${NC}"
+INSTALL_STATUS=$(run_occ status 2>/dev/null)
 
-if [[ "$INSTALLED" == *"not installed"* ]]; then
+if echo "$INSTALL_STATUS" | grep -q "installed: true"; then
+    NEXTCLOUD_VERSION=$(echo "$INSTALL_STATUS" | grep "version:" | cut -d' ' -f3)
+    echo -e "${GREEN}✅ Nextcloud is already installed (version: $NEXTCLOUD_VERSION)${NC}"
+    echo -e "${BLUE}   Skipping installation, proceeding with configuration...${NC}"
+else
     echo -e "${BLUE}⚙️ Installing Nextcloud (first-time setup)...${NC}"
-    
+
     # Run initial installation
-    docker exec nextcloud-app php occ maintenance:install \
+    INSTALL_OUTPUT=$(docker exec nextcloud-app php occ maintenance:install \
         --database="pgsql" \
         --database-name="nextcloud" \
         --database-user="nextcloud" \
@@ -118,18 +123,26 @@ if [[ "$INSTALLED" == *"not installed"* ]]; then
         --database-host="nextcloud-db" \
         --admin-user="admin" \
         --admin-pass="adminpassword" \
-        --data-dir="/var/www/html/data"
-    
-    if [ $? -eq 0 ]; then
+        --data-dir="/var/www/html/data" 2>&1)
+
+    INSTALL_EXIT_CODE=$?
+
+    if [ $INSTALL_EXIT_CODE -eq 0 ]; then
         echo -e "${GREEN}✅ Nextcloud installation completed${NC}"
     else
-        echo -e "${RED}❌ Nextcloud installation failed${NC}"
-        echo -e "${YELLOW}Checking logs:${NC}"
-        docker-compose logs --tail=20 nextcloud-app
-        exit 1
+        # Check if error is due to already being installed
+        if echo "$INSTALL_OUTPUT" | grep -q "Command.*maintenance:install.*is not defined"; then
+            echo -e "${GREEN}✅ Nextcloud is already installed (maintenance:install not available)${NC}"
+            echo -e "${BLUE}   Proceeding with configuration...${NC}"
+        else
+            echo -e "${RED}❌ Nextcloud installation failed${NC}"
+            echo -e "${YELLOW}Installation output:${NC}"
+            echo "$INSTALL_OUTPUT"
+            echo -e "${YELLOW}Checking container logs:${NC}"
+            docker compose  logs --tail=20 nextcloud-app
+            exit 1
+        fi
     fi
-else
-    echo -e "${GREEN}✅ Nextcloud is already installed${NC}"
 fi
 
 # Configure trusted domains
@@ -231,7 +244,7 @@ sleep 5
 
 # Check services
 echo "   📊 Container Status:"
-docker-compose ps
+docker compose  ps
 
 # Check Nextcloud status
 if run_occ status | grep -q "installed: true"; then

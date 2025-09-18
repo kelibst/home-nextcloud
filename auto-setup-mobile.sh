@@ -244,7 +244,7 @@ echo "✅ Created setup-mobile-access.ps1"
 
 # Update trusted domains
 echo -e "${BLUE}🛡️  Updating Nextcloud trusted domains...${NC}"
-if docker-compose ps | grep -q "nextcloud-app.*Up"; then
+if docker compose ps | grep -q "nextcloud-app.*Up"; then
     docker exec nextcloud-app php occ config:system:set trusted_domains 0 --value=localhost 2>/dev/null
     docker exec nextcloud-app php occ config:system:set trusted_domains 1 --value="$WSL_IP" 2>/dev/null
     docker exec nextcloud-app php occ config:system:set trusted_domains 2 --value="$WINDOWS_IP" 2>/dev/null

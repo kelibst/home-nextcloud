@@ -18,12 +18,12 @@ The project is configured to store data in the following directories:
 
 To build and run the project, you can use the following Docker Compose commands:
 
-*   **`docker-compose up -d`**: To start the services in detached mode.
-*   **`docker-compose down`**: To stop the services.
-*   **`docker-compose logs -f`**: To view the logs.
+*   **`docker compose  up -d`**: To start the services in detached mode.
+*   **`docker compose  down`**: To stop the services.
+*   **`docker compose  logs -f`**: To view the logs.
 
-**Note:** Before running the project, you need to replace the placeholder passwords in the `docker-compose.yml` or `.env` file with strong passwords.
+**Note:** Before running the project, you need to replace the placeholder passwords in the `docker compose .yml` or `.env` file with strong passwords.
 
 ## Development Conventions
 
-This project is a deployment of pre-built Docker images, so there are no specific development conventions. However, it is important to keep the `docker-compose.yml` and `.env` files under version control to track changes to the deployment configuration.
+This project is a deployment of pre-built Docker images, so there are no specific development conventions. However, it is important to keep the `docker compose .yml` and `.env` files under version control to track changes to the deployment configuration.

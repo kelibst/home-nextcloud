@@ -22,7 +22,7 @@ echo ""
 
 # Check if Nextcloud is running
 echo -e "${BLUE}🐳 Docker Container Status:${NC}"
-docker-compose ps
+docker compose  ps
 
 echo ""
 

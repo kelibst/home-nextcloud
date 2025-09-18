@@ -1,4 +1,4 @@
-# docker-compose.yml - Uses dynamic IP detection
+# docker compose .yml - Uses dynamic IP detection
 
 services:
   nextcloud-db:
@@ -57,7 +57,7 @@ services:
       - NEXTCLOUD_ADMIN_PASSWORD=adminpassword
       
       # Dynamic trusted domains - will be updated by script
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost host.docker.internal
+      - NEXTCLOUD_TRUSTED_DOMAINS=localhost 192.168.1.1 192.168.1.98 host.docker.internal
       
       # Use host.docker.internal for dynamic Windows IP resolution
       - OVERWRITEPROTOCOL=http
@@ -69,11 +69,13 @@ services:
       
       # Network optimizations
       - APACHE_DISABLE_REWRITE_IP=1
-      - TRUSTED_PROXIES=172.0.0.0/8 192.168.0.0/16 10.0.0.0/8 host.docker.internal  192.168.1.98
-      
-      # Force clean installation
-      - NEXTCLOUD_INIT_HTACCESS=true
-      - SQLITE_DATABASE=""
+      - TRUSTED_PROXIES=172.0.0.0/8 192.168.0.0/16 10.0.0.0/8 host.docker.internal 192.168.1.98
+
+      # External Storage Configuration
+      - EXTERNAL_STORAGE_NAME=${EXTERNAL_STORAGE_NAME}
+      - EXTERNAL_STORAGE_MOUNT_PATH=${EXTERNAL_STORAGE_MOUNT_PATH}
+      - EXTERNAL_STORAGE_FOLDER_NAME=${EXTERNAL_STORAGE_FOLDER_NAME}
+      - EXTERNAL_STORAGE_USERS=${EXTERNAL_STORAGE_USERS}
       
     depends_on:
       nextcloud-db:

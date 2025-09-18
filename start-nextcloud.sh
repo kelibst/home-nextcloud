@@ -84,8 +84,14 @@ detect_shared_drive_path() {
     echo "/mnt/d/shared_drive"
 }
 
-# Detect external storage path
-SHARED_DRIVE_PATH=$(detect_shared_drive_path)
+# Load existing .env if available to preserve user configuration
+if [ -f ".env" ] && grep -q "SHARED_DRIVE_PATH=" .env; then
+    source .env
+    echo -e "${BLUE}🔍 Using configured external storage path: ${GREEN}$SHARED_DRIVE_PATH${NC}"
+else
+    # Detect external storage path only if not configured
+    SHARED_DRIVE_PATH=$(detect_shared_drive_path)
+fi
 
 # Validate external storage path
 if [ ! -d "$SHARED_DRIVE_PATH" ]; then
@@ -107,6 +113,12 @@ NEXTCLOUD_URL=http://$WINDOWS_IP:8090
 # External Storage Configuration
 # Path will be auto-detected by start script based on OS
 SHARED_DRIVE_PATH=$SHARED_DRIVE_PATH
+
+# External Storage Mount Configuration
+EXTERNAL_STORAGE_NAME="External Drive"
+EXTERNAL_STORAGE_MOUNT_PATH="/mnt/external-storage"
+EXTERNAL_STORAGE_FOLDER_NAME="External Drive"
+EXTERNAL_STORAGE_USERS="all"
 EOF
 
 echo -e "${BLUE}📝 Updated .env file with current IPs${NC}"
@@ -222,11 +234,11 @@ echo -e "${BLUE}   powershell -ExecutionPolicy Bypass -File setup-port-forward.p
 
 # Stop any existing containers
 echo -e "${BLUE}🛑 Stopping existing containers...${NC}"
-docker-compose down
+docker compose  down
 
 # Start the containers
 echo -e "${BLUE}🚀 Starting Nextcloud containers...${NC}"
-docker-compose up -d
+docker compose  up -d
 
 # Wait for services to be ready
 echo -e "${BLUE}⏳ Waiting for services to start...${NC}"
@@ -251,32 +263,76 @@ echo -e "${GREEN}✅ Trusted domains configured for current session${NC}"
 # Configure external storage via occ command
 echo -e "${BLUE}🗂️  Configuring external storage...${NC}"
 
+# Load configuration from .env if it exists
+if [ -f ".env" ]; then
+    source .env
+fi
+
+# Use environment variables or defaults
+EXTERNAL_STORAGE_NAME=${EXTERNAL_STORAGE_NAME:-"External Drive"}
+EXTERNAL_STORAGE_MOUNT_PATH=${EXTERNAL_STORAGE_MOUNT_PATH:-"/mnt/external-storage"}
+EXTERNAL_STORAGE_FOLDER_NAME=${EXTERNAL_STORAGE_FOLDER_NAME:-"External Drive"}
+EXTERNAL_STORAGE_USERS=${EXTERNAL_STORAGE_USERS:-"all"}
+
+echo -e "   📁 Storage Name: ${GREEN}$EXTERNAL_STORAGE_NAME${NC}"
+echo -e "   📂 Mount Path: ${GREEN}$EXTERNAL_STORAGE_MOUNT_PATH${NC}"
+echo -e "   👥 Access: ${GREEN}$EXTERNAL_STORAGE_USERS${NC}"
+
 # Enable external storage app
-docker exec nextcloud-app php occ app:enable files_external 2>/dev/null || echo "  ℹ️  External storage app enabled"
+docker exec nextcloud-app php occ app:enable files_external 2>/dev/null && echo "  ✅ External storage app enabled" || echo "  ℹ️  External storage app already enabled"
 
 # Wait a moment for the app to be fully loaded
-sleep 2
+sleep 3
 
-# Remove any existing external storage with the same mount point
-docker exec nextcloud-app php occ files_external:delete -y 1 2>/dev/null || echo "  ℹ️  Cleaned up existing external storage"
+# Fix permissions for mounted external storage
+echo -e "${BLUE}🔧 Setting up external storage permissions...${NC}"
+docker exec nextcloud-app chown -R www-data:www-data "$EXTERNAL_STORAGE_MOUNT_PATH" 2>/dev/null || echo "  ℹ️  Permission setup attempted"
 
-# Add external storage mount
-docker exec nextcloud-app php occ files_external:create \
-    "SharedDrive" \
+# Remove any existing external storage with the same name
+docker exec nextcloud-app php occ files_external:list 2>/dev/null | grep -q "$EXTERNAL_STORAGE_NAME" && {
+    EXISTING_ID=$(docker exec nextcloud-app php occ files_external:list 2>/dev/null | grep "$EXTERNAL_STORAGE_NAME" | awk '{print $2}' | tr -d '|')
+    if [ ! -z "$EXISTING_ID" ]; then
+        docker exec nextcloud-app php occ files_external:delete -y "$EXISTING_ID" 2>/dev/null && echo "  🔄 Removed existing external storage"
+    fi
+}
+
+# Add external storage mount with proper configuration
+MOUNT_RESULT=$(docker exec nextcloud-app php occ files_external:create \
+    "$EXTERNAL_STORAGE_NAME" \
     "local" \
     "null::null" \
-    -c datadir="/mnt/external-storage" \
-    --user admin 2>/dev/null && echo "  ✅ External storage configured" || echo "  ℹ️  External storage already exists"
+    -c datadir="$EXTERNAL_STORAGE_MOUNT_PATH" \
+    --user admin 2>&1)
+
+if echo "$MOUNT_RESULT" | grep -q "Storage created successfully"; then
+    echo "  ✅ External storage mounted for admin"
+    MOUNT_ID=$(echo "$MOUNT_RESULT" | grep -o 'ID: [0-9]*' | cut -d' ' -f2)
+elif echo "$MOUNT_RESULT" | grep -q "already exists"; then
+    echo "  ℹ️  External storage already exists"
+    MOUNT_ID=$(docker exec nextcloud-app php occ files_external:list 2>/dev/null | grep "$EXTERNAL_STORAGE_NAME" | awk '{print $2}' | tr -d '|' | head -1)
+else
+    echo "  ⚠️  External storage creation attempted: $MOUNT_RESULT"
+    MOUNT_ID=""
+fi
+
+# Make storage available to all users if specified
+if [ "$EXTERNAL_STORAGE_USERS" = "all" ] && [ ! -z "$MOUNT_ID" ]; then
+    echo "  👥 External storage configured for admin user"
+fi
 
 # Verify external storage configuration
-docker exec nextcloud-app php occ files_external:list 2>/dev/null | grep -q "SharedDrive" && \
-    echo -e "${GREEN}✅ External storage 'SharedDrive' configured successfully${NC}" || \
-    echo -e "${YELLOW}⚠️  External storage configuration needs manual setup${NC}"
+sleep 2
+if docker exec nextcloud-app php occ files_external:list 2>/dev/null | grep -q "$EXTERNAL_STORAGE_NAME"; then
+    echo -e "${GREEN}✅ External storage '${EXTERNAL_STORAGE_NAME}' configured successfully${NC}"
+    echo -e "${GREEN}   📁 Access your external drive at: Files → ${EXTERNAL_STORAGE_NAME}${NC}"
+else
+    echo -e "${YELLOW}⚠️  External storage may need manual configuration via web interface${NC}"
+fi
 
 echo -e "${GREEN}✅ External storage configuration completed${NC}"
 
 # Check if containers are running
-if docker-compose ps | grep -q "Up"; then
+if docker compose  ps | grep -q "Up"; then
     echo -e "${GREEN}✅ Nextcloud is starting up!${NC}"
     echo -e "${GREEN}📱 Access URLs:${NC}"
     echo -e "   Local (WSL): ${BLUE}http://$WSL_IP:8090${NC}"
@@ -289,8 +345,8 @@ if docker-compose ps | grep -q "Up"; then
     echo ""
     echo -e "${YELLOW}⚠️  Don't forget to run the PowerShell script in Windows as Administrator!${NC}"
     echo ""
-    echo -e "${BLUE}📊 Monitor startup with: ${NC}docker-compose logs -f nextcloud-app"
+    echo -e "${BLUE}📊 Monitor startup with: ${NC}docker compose  logs -f nextcloud-app"
 else
-    echo -e "${RED}❌ Failed to start containers. Check logs with: docker-compose logs${NC}"
+    echo -e "${RED}❌ Failed to start containers. Check logs with: docker compose  logs${NC}"
     exit 1
 fi

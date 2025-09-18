@@ -4,7 +4,7 @@
       "Bash(netstat:*)",
       "Bash(ss:*)",
       "Bash(sudo cp:*)",
-      "Bash(docker-compose:*)",
+      "Bash(docker compose :*)",
       "Bash(curl:*)",
       "Bash(./start-nextcloud.sh:*)",
       "Bash(docker exec:*)",
@@ -17,7 +17,14 @@
       "Bash(git commit:*)",
       "Bash(git rm:*)",
       "Bash(sudo chown:*)",
-      "Bash(./fix-permissions.sh:*)"
+      "Bash(./fix-permissions.sh:*)",
+      "Bash(docker logs:*)",
+      "mcp__context7__resolve-library-id",
+      "WebFetch(domain:docs.nextcloud.com)",
+      "Read(//media/**)",
+      "Bash(mount)",
+      "Read(//etc/**)",
+      "Bash(docker-compose:*)"
     ],
     "deny": [],
     "ask": []

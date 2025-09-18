@@ -73,7 +73,7 @@ sudo apt update && sudo apt install git
 ```bash
 # Install Docker and dependencies
 sudo apt update
-sudo apt install docker.io docker-compose git curl
+sudo apt install docker.io docker compose  git curl
 sudo usermod -aG docker $USER
 # Log out and back in for permissions to take effect
 ```
@@ -114,14 +114,14 @@ The script will:
 # 1. Create project directory
 mkdir nextcloud-nas && cd nextcloud-nas
 
-# 2. Download the docker-compose.yml (see configuration section)
+# 2. Download the docker compose .yml (see configuration section)
 
 # 3. Create .env file with your settings
 cp .env.example .env
 # Edit .env with your storage path
 
 # 4. Start containers
-docker-compose up -d
+docker compose  up -d
 ```
 
 ## 📁 Shared Folder Configuration
@@ -184,7 +184,7 @@ SHARED_DRIVE_PATH=/your/storage/path/here
 ### How Storage Mapping Works
 
 ```yaml
-# This line in docker-compose.yml maps your storage:
+# This line in docker compose .yml maps your storage:
 - ${SHARED_DRIVE_PATH}:/mnt/external-storage:rw
 #   ^^^^^^^^^^^^^^^^^   ^^^^^^^^^^^^^^^^^^^^
 #   Your computer path   Path inside Nextcloud
@@ -316,7 +316,7 @@ Mobile:   http://192.168.1.100:8090
 
 ### Configuration Files
 
-#### `docker-compose.yml` - Container Configuration
+#### `docker compose .yml` - Container Configuration
 - **PostgreSQL**: Database backend for performance
 - **Redis**: Caching for speed optimization  
 - **Nextcloud**: Main application server
@@ -338,10 +338,10 @@ SHARED_DRIVE_PATH=/mnt/d/shared_drive
 #### View Status
 ```bash
 # Check if containers are running
-docker-compose ps
+docker compose  ps
 
 # View logs
-docker-compose logs -f nextcloud-app
+docker compose  logs -f nextcloud-app
 ```
 
 #### Start/Stop/Restart
@@ -350,10 +350,10 @@ docker-compose logs -f nextcloud-app
 ./start-nextcloud.sh
 
 # Stop containers
-docker-compose down
+docker compose  down
 
 # Restart containers
-docker-compose restart
+docker compose  restart
 ```
 
 ### Updates and Upgrades
@@ -361,7 +361,7 @@ docker-compose restart
 #### Update Nextcloud
 ```bash
 # Pull latest versions
-docker-compose pull
+docker compose  pull
 
 # Restart with new versions
 ./start-nextcloud.sh
@@ -395,10 +395,10 @@ The script automatically detects new IPs and updates everything.
 **Solutions**:
 ```bash
 # 1. Check if containers are running
-docker-compose ps
+docker compose  ps
 
 # 2. Check container logs
-docker-compose logs nextcloud-app
+docker compose  logs nextcloud-app
 
 # 3. Restart containers
 ./start-nextcloud.sh
@@ -438,7 +438,7 @@ docker stats
 df -h
 
 # 4. Restart Redis cache
-docker-compose restart redis
+docker compose  restart redis
 ```
 
 #### 💾 Storage Not Accessible
@@ -468,10 +468,10 @@ ls -la $SHARED_DRIVE_PATH
 docker exec nextcloud-db pg_isready -U nextcloud
 
 # 2. View database logs
-docker-compose logs nextcloud-db
+docker compose  logs nextcloud-db
 
 # 3. Reset database (CAUTION: Loses data)
-docker-compose down -v
+docker compose  down -v
 ./start-nextcloud.sh
 ```
 
@@ -482,8 +482,8 @@ docker-compose down -v
 ./troubleshoot-mobile.sh
 
 # Container health check
-docker-compose ps
-docker-compose logs --tail=50 nextcloud-app
+docker compose  ps
+docker compose  logs --tail=50 nextcloud-app
 
 # Database connection test
 docker exec nextcloud-app nc -zv nextcloud-db 5432
@@ -492,7 +492,7 @@ docker exec nextcloud-app nc -zv nextcloud-db 5432
 ./fix-permissions.sh
 
 # Complete restart
-docker-compose down && ./start-nextcloud.sh
+docker compose  down && ./start-nextcloud.sh
 ```
 
 ## ⚙️ Advanced Configuration
@@ -500,7 +500,7 @@ docker-compose down && ./start-nextcloud.sh
 ### Performance Optimization
 
 #### Increase Resource Limits
-**Edit `docker-compose.yml`:**
+**Edit `docker compose .yml`:**
 ```yaml
 environment:
   - PHP_MEMORY_LIMIT=2G      # Increase for large files
@@ -517,7 +517,7 @@ environment:
 ### Security Hardening
 
 #### Change Default Passwords
-**Edit `docker-compose.yml`:**
+**Edit `docker compose .yml`:**
 ```yaml
 environment:
   - POSTGRES_PASSWORD=your_secure_db_password_here
@@ -561,7 +561,7 @@ environment:
 ### Custom Storage Locations
 
 #### Multiple Storage Paths
-**Edit `docker-compose.yml` to add multiple volumes:**
+**Edit `docker compose .yml` to add multiple volumes:**
 ```yaml
 volumes:
   - ${SHARED_DRIVE_PATH}:/mnt/primary-storage:rw
@@ -608,11 +608,11 @@ volumes:
 ## 🚨 Important Security Notes
 
 ### Before Production Use
-1. **Change all default passwords** in `docker-compose.yml`
+1. **Change all default passwords** in `docker compose .yml`
 2. **Enable 2FA** in Nextcloud Admin settings  
 3. **Configure HTTPS** if accessing from internet
 4. **Regular backups** of important data
-5. **Keep containers updated** with `docker-compose pull`
+5. **Keep containers updated** with `docker compose  pull`
 
 ### Network Security
 - This setup is designed for **local network use**
@@ -628,8 +628,8 @@ volumes:
 ./start-nextcloud.sh              # Start/restart everything
 ./auto-setup-mobile.sh            # Configure mobile access  
 ./troubleshoot-mobile.sh          # Fix mobile connection issues
-docker-compose logs -f nextcloud-app  # View logs
-docker-compose down               # Stop all containers
+docker compose  logs -f nextcloud-app  # View logs
+docker compose  down               # Stop all containers
 ./fix-permissions.sh              # Fix file permission issues
 ```
 

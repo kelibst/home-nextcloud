@@ -147,9 +147,9 @@ restart_services() {
     echo -e "${BLUE}🔄 Restarting services...${NC}"
     
     # Restart containers in proper order
-    docker-compose restart redis
+    docker compose restart redis
     sleep 5
-    docker-compose restart nextcloud-app
+    docker compose restart nextcloud-app
     sleep 10
     
     # Wait for services to be ready
@@ -170,7 +170,7 @@ verify_fix() {
     echo -e "${BLUE}🔍 Verifying fixes...${NC}"
     
     # Check container status
-    if docker-compose ps | grep -q "Up"; then
+    if docker compose ps | grep -q "Up"; then
         echo -e "${GREEN}✅ Containers are running${NC}"
     else
         echo -e "${RED}❌ Some containers are not running${NC}"
@@ -213,9 +213,9 @@ echo -e "${BLUE}Starting comprehensive Nextcloud error fixing...${NC}"
 echo ""
 
 # Check if containers are running
-if ! docker-compose ps | grep -q "Up"; then
+if ! docker compose ps | grep -q "Up"; then
     echo -e "${YELLOW}⚠️ Starting containers first...${NC}"
-    docker-compose up -d
+    docker compose up -d
     sleep 15
 fi
 

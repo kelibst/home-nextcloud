@@ -38,7 +38,7 @@ Set up a home NAS solution using Nextcloud in Docker containers to manage data a
 ## Project Structure
 ```
 nextcloud-nas/
-├── docker-compose.yml
+├── docker compose .yml
 ├── .env
 ├── data/
 │   ├── nextcloud-config/
@@ -93,7 +93,7 @@ nextcloud-nas/
 ## Expected Deliverables
 
 ### Docker Configuration
-- ✅ Complete docker-compose.yml with PostgreSQL
+- ✅ Complete docker compose .yml with PostgreSQL
 - ✅ Environment variables file (.env)
 - ✅ Volume mapping for storage (`./data/` directory structure)
 - ✅ Network configuration for local access
