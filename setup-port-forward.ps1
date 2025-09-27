@@ -24,4 +24,4 @@ Write-Host "Current port forwarding rules:" -ForegroundColor Green
 netsh interface portproxy show v4tov4
 
 Write-Host "✅ Windows networking setup complete!" -ForegroundColor Green
-Write-Host "Access Nextcloud at: http://192.168.1.1:8090" -ForegroundColor Cyan
+Write-Host "Access Nextcloud at: http://10.42.138.216:8090" -ForegroundColor Cyan

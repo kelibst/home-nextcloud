@@ -41,6 +41,7 @@ services:
       - nextcloud_custom_apps:/var/www/html/custom_apps
       - nextcloud_themes:/var/www/html/themes
       - ${SHARED_DRIVE_PATH}:/mnt/external-storage:rw
+      - /media/Kelib/DATA:/mnt/data:rw
     environment:
       # PostgreSQL Configuration
       - POSTGRES_HOST=nextcloud-db
