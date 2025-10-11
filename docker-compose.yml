@@ -55,19 +55,37 @@ services:
     networks:
       - nextcloud-network
 
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - '80:80'      # HTTP
+      - '81:81'      # Admin Web UI
+      - '443:443'    # HTTPS
+    volumes:
+      - ./nginx-proxy-manager/data:/data
+      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Africa/Nairobi
+    networks:
+      - nextcloud-network
+
   nextcloud-app:
     image: nextcloud:latest
     container_name: nextcloud-app
     restart: unless-stopped
     ports:
-      # Bind to all interfaces for external access
+      # Keep port 8090 for direct access if needed
       - "8090:80"
     volumes:
       - ./config:/var/www/html/config
       - ./data:/var/www/html/data
       - ./custom_apps:/var/www/html/custom_apps
       - ./themes:/var/www/html/themes
-      - /media/Kelib/DATA2:/mnt/external_storage:rw
+      - /media/Kelib/DATA:/mnt/external_storage:rw
       - ./:/shared:ro
     environment:
       # PostgreSQL Configuration

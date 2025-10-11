@@ -37,37 +37,34 @@ sudo usermod -aG docker $USER
 
 ## Quick Start
 
-### 1. Download and Setup
+### 1. Start All Services
 ```bash
-# Create project directory
-mkdir nextcloud-nas && cd nextcloud-nas
-
-# Create required directories
-mkdir -p database config data custom_apps themes
-
-# Download the docker-compose.yml (see Configuration section)
+docker compose up -d
 ```
 
-### 2. Find Your Network Information
-```bash
-# On Windows - find your actual Windows IP (not WSL IP)
-ipconfig
+### 2. Access Points
+- **Nextcloud (Direct)**: `http://192.168.1.200:8090`
+- **Nextcloud (via Proxy)**: `http://192.168.1.200` (after NPM setup)
+- **NPM Admin Panel**: `http://192.168.1.200:81`
+  - Default: admin@example.com / changeme
 
-# Look for "Wireless LAN adapter Wi-Fi" or "Ethernet adapter"
-# Note the IPv4 Address (e.g., 192.168.1.100)
-```
+### 3. Configure Nginx Proxy Manager (First Time)
+1. Open `http://192.168.1.200:81`
+2. Login with: admin@example.com / changeme
+3. **Change password immediately!**
+4. Add Proxy Host:
+   - Domain: `192.168.1.200` or `nextcloud.local`
+   - Scheme: `http`
+   - Forward Hostname: `nextcloud-app`
+   - Forward Port: `80`
+   - Enable: Cache Assets, Block Exploits, Websockets
 
-### 3. Update Configuration
-Edit `docker-compose.yml` and replace `YOUR_WINDOWS_HOST_IP` with your actual Windows IP address.
+### 4. Family Access
+Your family can now access Nextcloud at:
+- **`http://192.168.1.200`** (after NPM setup)
+- **`http://192.168.1.200:8090`** (direct access)
 
-### 4. Start Services
-```bash
-docker-compose up -d
-```
-
-### 5. Access Nextcloud
-- **Web Browser**: `http://YOUR_WINDOWS_IP:8080`
-- **Default Login**: Username `admin`, Password `adminpassword`
+**Static IP configured**: Server IP won't change on reboot!
 
 ## Configuration
 
@@ -338,15 +335,85 @@ Install through Nextcloud web interface:
 - **Contacts**: Contact synchronization
 - **Notes**: Note-taking across devices
 
+## Making Your Shared Folder Accessible in Nextcloud
+
+### Current Setup
+Your docker-compose.yml already mounts your DATA drive:
+```yaml
+- /media/Kelib/DATA:/mnt/external_storage:rw
+```
+
+### Steps to Enable Access:
+
+#### 1. Restart Nextcloud Container (if you just changed the mount)
+```bash
+docker compose restart nextcloud-app
+```
+
+#### 2. Enable External Storage App
+1. Login to Nextcloud web UI (`http://192.168.1.200:8090` or `http://192.168.1.200`)
+2. Click your profile icon → **Apps**
+3. Search for **"External storage"**
+4. Click **Enable**
+
+#### 3. Configure External Storage
+1. Click profile icon → **Settings** → **Administration** → **External storage**
+2. Click **"Add storage"** → **Local**
+3. Configure:
+   - **Folder name**: `Shared Drive` (or any name you want)
+   - **Configuration**: `/mnt/external_storage`
+   - **Available for**: Select users or groups (or leave blank for admin only)
+   - Check **"Enable sharing"** to allow family to share files
+4. Click the checkmark ✓ to save
+
+#### 4. Set Permissions (Optional)
+- Click the three dots next to the storage
+- Set read/write permissions
+- Choose which users can access
+
+### Alternative: Mount Multiple Drives
+If you want to add more storage drives, edit docker-compose.yml volumes:
+
+```yaml
+volumes:
+  - ./config:/var/www/html/config
+  - ./data:/var/www/html/data
+  - /media/kelib/DATA:/mnt/storage/DATA:rw
+  - /media/kelib/Extra Disk:/mnt/storage/ExtraDisk:rw
+  - /media/kelib/59373E7526CE30E3:/mnt/storage/Backup:rw
+```
+
+Then configure each as separate external storage in Nextcloud admin panel.
+
+### Troubleshooting External Storage
+
+**"Red indicator" on external storage:**
+- Check folder exists: `docker exec nextcloud-app ls -la /mnt/external_storage`
+- Check permissions: Folder should be readable by www-data user
+- Verify mount in docker-compose.yml is correct
+
+**Files not showing:**
+- Run scan: `docker exec nextcloud-app php occ files:scan --all`
+- Check Nextcloud logs in Admin → Logging
+
+**Permission denied:**
+```bash
+# Fix permissions on host
+sudo chown -R kelib:kelib /media/kelib/DATA
+sudo chmod -R 755 /media/kelib/DATA
+```
+
 ## Success Criteria
 
-✅ **Nextcloud accessible** via web browser at `http://YOUR_IP:8080`  
-✅ **PostgreSQL database** connected (no SQLite warnings)  
-✅ **Redis caching** active for performance  
-✅ **Android app** connects and syncs files  
-✅ **iPhone app** connects and syncs files  
-✅ **Photo backup** working from mobile devices  
-✅ **3TB storage** accessible and functional  
+✅ **Nextcloud accessible** via web browser at `http://192.168.1.200`
+✅ **Static IP configured** (192.168.1.200 - won't change on reboot)
+✅ **PostgreSQL database** connected (no SQLite warnings)
+✅ **Redis caching** active for performance
+✅ **Nginx Proxy Manager** running for domain management
+✅ **External storage** mounted and accessible (627GB available on DATA drive)
+✅ **Android app** connects and syncs files
+✅ **iPhone app** connects and syncs files
+✅ **Photo backup** working from mobile devices
 ✅ **File sharing** between devices operational  
 
 ## Support
