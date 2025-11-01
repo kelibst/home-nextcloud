@@ -205,46 +205,95 @@ docker exec nextcloud-app php occ config:system:set trusted_domains 9 --value=19
 
 ---
 
-### 6. External Storage Not Showing
+### 6. External Storage Mount Error
 
 #### Symptoms
+- "External mount error" popup in Nextcloud
 - Red indicator on external storage
-- Folder not visible in Files
+- Folder not visible or accessible in Files
 - "Storage not available" error
 
-#### Solutions
+#### Root Cause
+The most common issue is **permissions**. Nextcloud runs as `www-data` (UID 33) inside the container, but the mounted directory is owned by root (UID 0) and lacks write permissions for www-data.
 
-**Check mount exists in container:**
+#### Quick Fix (RECOMMENDED)
+```bash
+# Fix ownership inside the container
+docker exec nextcloud-app chown -R www-data:www-data /mnt/external_storage
+
+# Verify the fix
+docker exec -u www-data nextcloud-app php /var/www/html/occ files_external:verify 1
+# Expected: status: ok
+```
+
+#### Diagnostic Steps
+
+**1. Check mount exists in container:**
 ```bash
 docker exec nextcloud-app ls -la /mnt/external_storage
 ```
 
-**Verify host path:**
+**2. Check ownership and permissions:**
+```bash
+# Numeric UIDs (should show 33:33 for www-data)
+docker exec nextcloud-app ls -lan /mnt/external_storage
+
+# Check www-data UID
+docker exec nextcloud-app id www-data
+# Expected: uid=33(www-data) gid=33(www-data)
+```
+
+**3. Test write access:**
+```bash
+# Try to create a file as www-data
+docker exec -u www-data nextcloud-app touch /mnt/external_storage/test_file
+
+# If successful, clean up
+docker exec -u www-data nextcloud-app rm /mnt/external_storage/test_file
+```
+
+**4. Verify host path exists:**
 ```bash
 ls -la /media/kelib/DATA
 ```
 
-**Check permissions:**
+#### Alternative Solutions
+
+**If container fix doesn't work, try host permissions:**
 ```bash
-# Host permissions
 sudo chmod -R 755 /media/kelib/DATA
 sudo chown -R kelib:kelib /media/kelib/DATA
-
-# Container can access
-docker exec nextcloud-app ls -la /mnt/external_storage
 ```
 
-**Rescan files:**
+**Rescan files after fixing:**
 ```bash
-docker exec nextcloud-app php occ files:scan --all
+docker exec -u www-data nextcloud-app php /var/www/html/occ files:scan --all
 ```
 
-**Re-mount volume:**
+**Check external storage configuration:**
 ```bash
-# Edit docker-compose.yml to fix volume path
+# List all external mounts
+docker exec -u www-data nextcloud-app php /var/www/html/occ files_external:list
+
+# Verify specific mount (replace 1 with mount ID)
+docker exec -u www-data nextcloud-app php /var/www/html/occ files_external:verify 1
+```
+
+**Re-mount volume (last resort):**
+```bash
+# Edit docker-compose.yml to fix volume path if needed
 docker compose down
 docker compose up -d
 ```
+
+**Permanent fix - Run container as www-data:**
+Add to `docker-compose.yml` under `nextcloud-app` service:
+```yaml
+user: "33:33"
+```
+Then restart: `docker compose restart nextcloud-app`
+
+See [Storage Documentation](STORAGE.md#external-mount-error-message) for more details.
 
 ---
 

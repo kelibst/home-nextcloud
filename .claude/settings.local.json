@@ -25,7 +25,10 @@
       "Bash(./manage-ip.sh:*)",
       "Bash(./scripts/enhanced-ip-detect.sh:*)",
       "Read(//media/Kelib/**)",
-      "WebFetch(domain:docs.nextcloud.com)"
+      "WebFetch(domain:docs.nextcloud.com)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []

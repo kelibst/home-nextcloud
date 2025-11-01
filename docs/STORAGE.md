@@ -119,14 +119,67 @@ Files will appear directly in Nextcloud Files under `/shared` folder.
 
 ## Troubleshooting
 
+### "External mount error" Message
+
+If you see this error when accessing external storage in Nextcloud, it indicates the mount point is not accessible or has incorrect permissions.
+
+**Common Causes:**
+1. Directory owned by root instead of www-data
+2. Missing write permissions for www-data user
+3. Directory not mounted correctly
+4. Empty or non-existent directory
+
+**Quick Fix:**
+```bash
+# Fix ownership to www-data
+docker exec nextcloud-app chown -R www-data:www-data /mnt/external_storage
+
+# Verify it works
+docker exec -u www-data nextcloud-app php /var/www/html/occ files_external:verify 1
+```
+
+Expected output: `status: ok`
+
+---
+
 ### Red Indicator on External Storage
 
-**Check if folder exists:**
+This usually indicates a permissions issue. The Nextcloud process runs as `www-data` (UID 33) and needs write access to the mounted directory.
+
+**Step 1: Check if folder exists:**
 ```bash
 docker exec nextcloud-app ls -la /mnt/external_storage
 ```
 
-**Check permissions:**
+**Step 2: Check permissions and ownership:**
+```bash
+# Check who owns the directory inside the container
+docker exec nextcloud-app ls -lan /mnt/external_storage
+
+# Check the www-data user ID
+docker exec nextcloud-app id www-data
+```
+
+**Step 3: Fix permissions (REQUIRED):**
+```bash
+# Change ownership to www-data inside the container
+docker exec nextcloud-app chown -R www-data:www-data /mnt/external_storage
+
+# Verify the fix
+docker exec -u www-data nextcloud-app touch /mnt/external_storage/test_file
+docker exec -u www-data nextcloud-app rm /mnt/external_storage/test_file
+```
+
+**Step 4: Verify the mount:**
+```bash
+# Check external storage status
+docker exec -u www-data nextcloud-app php /var/www/html/occ files_external:list
+
+# Verify specific mount (replace 1 with your mount ID)
+docker exec -u www-data nextcloud-app php /var/www/html/occ files_external:verify 1
+```
+
+**Alternative: Fix host permissions (if container fix doesn't work):**
 ```bash
 sudo chown -R kelib:kelib /media/kelib/DATA
 sudo chmod -R 755 /media/kelib/DATA
@@ -151,20 +204,40 @@ docker exec nextcloud-app php occ files:scan admin
 
 ### Permission Denied Errors
 
-**Option 1: Fix host permissions**
+**Understanding the Issue:**
+The problem occurs because Docker mounts the host directory with the host's user permissions, but Nextcloud inside the container runs as `www-data` (UID 33). If the mounted directory is owned by root (UID 0), www-data cannot write to it.
+
+**Option 1: Fix inside container (RECOMMENDED)**
+```bash
+# Change ownership to www-data inside the container
+docker exec nextcloud-app chown -R www-data:www-data /mnt/external_storage
+
+# Test write access
+docker exec -u www-data nextcloud-app touch /mnt/external_storage/test_file && \
+  echo "Success! Write access confirmed."
+```
+
+**Option 2: Fix host permissions**
 ```bash
 sudo chown -R kelib:kelib /media/kelib/DATA
 sudo chmod -R 755 /media/kelib/DATA
 ```
 
-**Option 2: Match Docker user ID**
+**Option 3: Match Docker user ID (advanced)**
 ```bash
 # Check www-data UID in container
 docker exec nextcloud-app id www-data
 
-# If needed, adjust permissions to match
-sudo chown -R 33:33 /media/kelib/DATA  # 33 is typical www-data UID
+# If needed, adjust host permissions to match (UID 33)
+sudo chown -R 33:33 /media/kelib/DATA
 ```
+
+**Permanent Solution:**
+Add this to your docker-compose.yml under the nextcloud-app service:
+```yaml
+user: "33:33"  # Run as www-data
+```
+Then restart: `docker compose restart nextcloud-app`
 
 ### Slow Performance
 

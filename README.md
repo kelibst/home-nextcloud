@@ -172,6 +172,7 @@ Current status of your Nextcloud setup:
 - **Can't access web UI?** Check containers are running: `docker compose ps`
 - **Trusted domain error?** See [Networking Guide](docs/NETWORKING.md#trusted-domains-configuration)
 - **Mobile app won't connect?** Verify server URL: `http://192.168.1.200`
+- **External mount error?** Fix permissions: `docker exec nextcloud-app chown -R www-data:www-data /mnt/external_storage`
 - **Slow performance?** Check Redis: `docker exec nextcloud-app redis-cli -h redis -a redispassword ping`
 
 ### Resources
