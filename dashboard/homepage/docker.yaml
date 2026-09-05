@@ -1,0 +1,5 @@
+# Homepage reads container state through the read-only socket proxy, never
+# through /var/run/docker.sock directly.
+homelab:
+  host: dockerproxy
+  port: 2375

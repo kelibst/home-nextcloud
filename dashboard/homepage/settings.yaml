@@ -1,0 +1,22 @@
+title: Home NAS
+description: Nextcloud homelab
+startUrl: /
+
+theme: dark
+color: slate
+headerStyle: boxed
+
+layout:
+  Storage:
+    style: row
+    columns: 2
+  Monitoring:
+    style: row
+    columns: 2
+  Infrastructure:
+    style: row
+    columns: 3
+
+quicklaunch:
+  searchDescriptions: true
+  hideInternetSearch: true

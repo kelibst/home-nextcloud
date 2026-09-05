@@ -1,3 +1,9 @@
+> ⚠️ **This document describes the older Windows/WSL2 deployment.**
+> The stack now runs natively on Linux (DeepinOS) and includes a Homepage
+> dashboard, Uptime Kuma and Dozzle. See **[HOMELAB.md](HOMELAB.md)** for the
+> current setup, install steps and troubleshooting. The Windows PowerShell
+> scripts here are kept for reference only.
+
 # 🏠 Easy Nextcloud NAS Setup - Complete Home Cloud Solution
 
 Transform your computer into a powerful home NAS (Network Attached Storage) with automatic mobile access, file sharing, and photo backup - all using Docker containers with **zero manual configuration**.

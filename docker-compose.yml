@@ -1,19 +1,26 @@
-# docker compose .yml - Uses dynamic IP detection
+# Home NAS stack: Nextcloud + PostgreSQL + Redis + dashboards
+#
+# Storage layout (deliberate — see readme.md "Why the data dir is not on the drive"):
+#   - Postgres / Nextcloud config / Nextcloud data dir  -> Docker named volumes on ext4
+#   - ${SHARED_DRIVE_PATH} (NTFS, 3TB)                  -> bind-mounted and exposed to
+#                                                          Nextcloud as "Local" External Storage
+# NTFS has no POSIX ownership or file locking, so it cannot host Postgres or the
+# Nextcloud data dir. It is perfectly fine as external storage.
 
 services:
   nextcloud-db:
-    image: postgres:13-alpine
+    image: postgres:16-alpine
     container_name: nextcloud-db
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=nextcloud
-      - POSTGRES_USER=nextcloud
-      - POSTGRES_PASSWORD=nextcloudpassword
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - PGDATA=/var/lib/postgresql/data/pgdata
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nextcloud -d nextcloud"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,63 +31,157 @@ services:
     image: redis:alpine
     container_name: nextcloud-redis
     restart: unless-stopped
-    command: redis-server --requirepass redispassword
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - nextcloud-network
 
   nextcloud-app:
-    image: nextcloud:latest
+    image: nextcloud:stable-apache
     container_name: nextcloud-app
     restart: unless-stopped
     ports:
-      # Bind to all interfaces for external access
-      - "8090:80"
+      - "${NEXTCLOUD_PORT}:80"
     volumes:
+      - nextcloud_html:/var/www/html
       - nextcloud_config:/var/www/html/config
       - nextcloud_data:/var/www/html/data
       - nextcloud_custom_apps:/var/www/html/custom_apps
       - nextcloud_themes:/var/www/html/themes
-      - ${SHARED_DRIVE_PATH}:/mnt/external-storage:rw
-      - /media/Kelib/DATA:/mnt/data:rw
+      # The 3TB drive, surfaced inside Nextcloud as External Storage
+      - ${SHARED_DRIVE_PATH}:${EXTERNAL_STORAGE_MOUNT_PATH}:rw
     environment:
-      # PostgreSQL Configuration
       - POSTGRES_HOST=nextcloud-db
-      - POSTGRES_DB=nextcloud
-      - POSTGRES_USER=nextcloud
-      - POSTGRES_PASSWORD=nextcloudpassword
-      
-      # Redis Configuration
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
       - REDIS_HOST=redis
-      - REDIS_HOST_PASSWORD=redispassword
-      
-      # Nextcloud Configuration
-      - NEXTCLOUD_ADMIN_USER=admin
-      - NEXTCLOUD_ADMIN_PASSWORD=adminpassword
-      
-      # Dynamic trusted domains - will be updated by script
-      - NEXTCLOUD_TRUSTED_DOMAINS=localhost 192.168.1.1 192.168.1.98 host.docker.internal
-      
-      # Use host.docker.internal for dynamic Windows IP resolution
+      - REDIS_HOST_PASSWORD=${REDIS_PASSWORD}
+
+      - NEXTCLOUD_ADMIN_USER=${NEXTCLOUD_ADMIN_USER}
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_ADMIN_PASSWORD}
+      - NEXTCLOUD_TRUSTED_DOMAINS=${NEXTCLOUD_TRUSTED_DOMAINS}
+
       - OVERWRITEPROTOCOL=http
-      
-      # PHP Configuration
+      - TRUSTED_PROXIES=172.16.0.0/12 192.168.0.0/16 10.0.0.0/8
+
       - PHP_MEMORY_LIMIT=1G
       - PHP_UPLOAD_LIMIT=10G
       - PHP_MAX_FILE_UPLOADS=100
-      
-      # Network optimizations
       - APACHE_DISABLE_REWRITE_IP=1
-      - TRUSTED_PROXIES=172.0.0.0/8 192.168.0.0/16 10.0.0.0/8 host.docker.internal 192.168.1.98
-
-      # External Storage Configuration
-      - EXTERNAL_STORAGE_NAME=${EXTERNAL_STORAGE_NAME}
-      - EXTERNAL_STORAGE_MOUNT_PATH=${EXTERNAL_STORAGE_MOUNT_PATH}
-      - EXTERNAL_STORAGE_FOLDER_NAME=${EXTERNAL_STORAGE_FOLDER_NAME}
-      - EXTERNAL_STORAGE_USERS=${EXTERNAL_STORAGE_USERS}
-      
     depends_on:
       nextcloud-db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - nextcloud-network
+
+  # Background jobs (file scans, previews, cleanup). Without this Nextcloud falls
+  # back to AJAX cron, which only runs while a browser tab is open.
+  nextcloud-cron:
+    image: nextcloud:stable-apache
+    container_name: nextcloud-cron
+    restart: unless-stopped
+    entrypoint: /cron.sh
+    volumes:
+      - nextcloud_html:/var/www/html
+      - nextcloud_config:/var/www/html/config
+      - nextcloud_data:/var/www/html/data
+      - nextcloud_custom_apps:/var/www/html/custom_apps
+      - nextcloud_themes:/var/www/html/themes
+      - ${SHARED_DRIVE_PATH}:${EXTERNAL_STORAGE_MOUNT_PATH}:rw
+    depends_on:
+      nextcloud-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - nextcloud-network
+
+  # --- Dashboards -----------------------------------------------------------
+
+  # Read-only, filtered proxy in front of the Docker API. The dashboards talk to
+  # this instead of bind-mounting /var/run/docker.sock, which would be equivalent
+  # to giving them host root.
+  dockerproxy:
+    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    container_name: nextcloud-dockerproxy
+    restart: unless-stopped
+    environment:
+      - CONTAINERS=1   # list containers + read logs (what Homepage/Dozzle need)
+      - IMAGES=1
+      - INFO=1
+      - PING=1
+      - VERSION=1
+      - POST=0         # no create/start/stop/exec
+      - EXEC=0
+      - VOLUMES=0
+      - NETWORKS=0
+      - SERVICES=0
+      - TASKS=0
+      - SECRETS=0
+      - AUTH=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - nextcloud-network
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: nextcloud-homepage
+    restart: unless-stopped
+    ports:
+      - "${DASHBOARD_PORT}:3000"
+    environment:
+      # Homepage v1+ refuses requests from hosts not listed here.
+      - HOMEPAGE_ALLOWED_HOSTS=${HOMEPAGE_ALLOWED_HOSTS}
+      - PUID=1000
+      - PGID=1000
+      # Substituted into dashboard/homepage/*.yaml as {{HOMEPAGE_VAR_*}}
+      - HOMEPAGE_VAR_LAN_IP=${LAN_IP}
+      - HOMEPAGE_VAR_NEXTCLOUD_PORT=${NEXTCLOUD_PORT}
+      - HOMEPAGE_VAR_DOZZLE_PORT=${DOZZLE_PORT}
+      - HOMEPAGE_VAR_UPTIME_KUMA_PORT=${UPTIME_KUMA_PORT}
+      - HOMEPAGE_VAR_NEXTCLOUD_USER=${NEXTCLOUD_ADMIN_USER}
+      - HOMEPAGE_VAR_NEXTCLOUD_APP_PASSWORD=${NEXTCLOUD_APP_PASSWORD:-}
+    volumes:
+      - ./dashboard/homepage:/app/config
+      - homepage_images:/app/public/images
+      # Read-only, so the disk widget can report free space on the 3TB drive
+      - /media/Kelib/DATA:/mnt/data:ro
+    depends_on:
+      - dockerproxy
+    networks:
+      - nextcloud-network
+
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: nextcloud-dozzle
+    restart: unless-stopped
+    ports:
+      - "${DOZZLE_PORT}:8080"
+    environment:
+      - DOZZLE_REMOTE_HOST=tcp://dockerproxy:2375|homelab
+      - DOZZLE_NO_ANALYTICS=true
+    depends_on:
+      - dockerproxy
+    networks:
+      - nextcloud-network
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: nextcloud-uptime-kuma
+    restart: unless-stopped
+    ports:
+      - "${UPTIME_KUMA_PORT}:3001"
+    volumes:
+      - uptime_kuma_data:/app/data
     networks:
       - nextcloud-network
 
@@ -90,12 +191,10 @@ networks:
 
 volumes:
   postgres_data:
-    driver: local
+  nextcloud_html:
   nextcloud_config:
-    driver: local
   nextcloud_data:
-    driver: local
   nextcloud_custom_apps:
-    driver: local
   nextcloud_themes:
-    driver: local
+  homepage_images:
+  uptime_kuma_data:

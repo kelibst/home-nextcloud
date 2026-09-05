@@ -1,0 +1,20 @@
+- resources:
+    label: Host
+    cpu: true
+    memory: true
+    uptime: true
+
+- resources:
+    label: 3TB Drive
+    disk: /mnt/data
+
+- search:
+    provider: duckduckgo
+    target: _blank
+
+- datetime:
+    text_size: xl
+    format:
+      dateStyle: long
+      timeStyle: short
+      hourCycle: h23

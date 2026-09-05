@@ -1,0 +1,55 @@
+- Storage:
+    - Nextcloud:
+        icon: nextcloud.png
+        href: http://{{HOMEPAGE_VAR_LAN_IP}}:{{HOMEPAGE_VAR_NEXTCLOUD_PORT}}
+        description: Files, photo backup, mobile sync
+        server: homelab
+        container: nextcloud-app
+        siteMonitor: http://nextcloud-app:80/status.php
+        # Populated by start-homelab.sh via `occ user:add-app-password`.
+        # Shows free space, active users and pending background jobs.
+        widget:
+          type: nextcloud
+          url: http://nextcloud-app:80
+          username: "{{HOMEPAGE_VAR_NEXTCLOUD_USER}}"
+          password: "{{HOMEPAGE_VAR_NEXTCLOUD_APP_PASSWORD}}"
+
+    - Shared Drive:
+        icon: mdi-harddisk
+        description: /media/Kelib/DATA/shared_drive (NTFS, 3TB)
+        # Free space for this drive is reported by the disk widget in widgets.yaml
+        href: http://{{HOMEPAGE_VAR_LAN_IP}}:{{HOMEPAGE_VAR_NEXTCLOUD_PORT}}/index.php/apps/files/
+
+- Monitoring:
+    - Uptime Kuma:
+        icon: uptime-kuma.png
+        href: http://{{HOMEPAGE_VAR_LAN_IP}}:{{HOMEPAGE_VAR_UPTIME_KUMA_PORT}}
+        description: Service health checks and alerts
+        server: homelab
+        container: nextcloud-uptime-kuma
+
+    - Dozzle:
+        icon: dozzle.png
+        href: http://{{HOMEPAGE_VAR_LAN_IP}}:{{HOMEPAGE_VAR_DOZZLE_PORT}}
+        description: Live container logs
+        server: homelab
+        container: nextcloud-dozzle
+
+- Infrastructure:
+    - PostgreSQL:
+        icon: postgres.png
+        description: Nextcloud database
+        server: homelab
+        container: nextcloud-db
+
+    - Redis:
+        icon: redis.png
+        description: Nextcloud cache
+        server: homelab
+        container: nextcloud-redis
+
+    - Nextcloud Cron:
+        icon: mdi-clock-outline
+        description: Background jobs
+        server: homelab
+        container: nextcloud-cron
